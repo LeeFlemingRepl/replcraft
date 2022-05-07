@@ -1,0 +1,30 @@
+name: Replcraft
+version: '${project.version}'
+main: eelfloat.replcraft.ReplCraft
+api-version: 1.18
+authors: [ eelfloat ]
+softdepend: [ Vault, WorldGuard, GriefPrevention, CoreProtect ]
+
+permissions:
+  replcraft.auth.self: { default: true, description: "Allows obtaining tokens from signs with a matching username"}
+  replcraft.auth.admin: { default: op, description: "Allows obtaining tokens from ANY sign, including those with the name '@ADMIN'"}
+  replcraft.auth.public: { default: true, description: "Allows obtaining tokens from signs with the name '@PUBLIC'"}
+  replcraft.api.watch: { default: true, description: "Allows use of the `watch` api call"}
+  replcraft.api.unwatch: { default: true, description: "Allows use of the `unwatch` api call"}
+  replcraft.api.poll: { default: true, description: "Allows use of the `poll` api call"}
+  replcraft.api.unpoll: { default: true, description: "Allows use of the `unpoll` api call"}
+  replcraft.api.watch_all: { default: true, description: "Allows use of the `watch_all` api call"}
+  replcraft.api.unwatch_all: { default: true, description: "Allows use of the `unwatch_all` api call"}
+  replcraft.api.poll_all: { default: true, description: "Allows use of the `poll_all` api call"}
+  replcraft.api.unpoll_all: { default: true, description: "Allows use of the `unpoll_all` api call"}
+  replcraft.api.get_entities: { default: true, description: "Allows use of the `get_entities` api call"}
+  replcraft.api.get_inventory: { default: true, description: "Allows use of the `get_inventory` api call"}
+  replcraft.api.move_item: { default: true, description: "Allows use of the `move_item` api call"}
+  replcraft.api.get_power_level: { default: true, description: "Allows use of the `get_power_level` api call"}
+  replcraft.api.get_size: { default: true, description: "Allows use of the `get_size` api call"}
+  replcraft.api.get_location: { default: true, description: "Allows use of the `get_location` api call"}
+  replcraft.api.get_block: { default: true, description: "Allows use of the `get_block` api call"}
+  replcraft.api.get_sign_text: { default: true, description: "Allows use of the `get_sign_text` api call"}
+  replcraft.api.set_sign_text: { default: true, description: "Allows use of the `set_sign_text` api call"}
+  replcraft.api.craft: { default: true, description: "Allows use of the `craft` api call"}
+  replcraft.api.set_block: { default: true, description: "Allows use of the `set_block` api call"}

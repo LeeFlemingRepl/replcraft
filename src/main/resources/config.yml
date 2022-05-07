@@ -1,0 +1,66 @@
+# The publicly accessible IP of this instance. Will be encoded into issued api tokens.
+# Should look something like "1.2.3.4:28080"
+public_address: FILL_ME_IN_IN_CONFIG_YML
+# The interface the webserver will listen on
+listen_address: "0.0.0.0"
+# The port the webserver will listen on
+listen_port: 28080
+
+# Makes the `setBlock` API not require any input block
+# May also be used for other APIs in the future (e.g. being able to spawn arbitrary items)
+creative_mode: false
+
+protection:
+  # Uses Vault to obtain permissions for OfflinePlayers
+  # Warning: disabling this requires the player to be online. API requests will throw errors otherwise.
+  permissions_vault: false
+  # Direct GriefPrevention integration, checks claims to see if the structure owner can build in them.
+  # Absolutely required if you use GriefPrevention to prevent a structure being built around the whole claim.
+  grief_prevention: false
+  # Direct CoreProtect integration to log changes made via API
+  core_protect: false
+  # Direct WorldGuard integration, offers `replcraft` flag to allow or deny modification via API
+  world_guard: false
+  # Default block protection: tests a BlockBreakEvent to see if it's cancelled
+  # Very important if you use non-GriefPrevention based land claims, otherwise a structure could be built around the
+  # entire claim and used to modify blocks inside it.
+  # Warning: enabling this requires the player to be online. API requests will throw errors otherwise.
+  default_block: false
+  # Default sign protection: tests a SignChangeEvent to see if it's cancelled or modified
+  # Absolutely required if you use ChestShop, otherwise `set_sign_text` can be used to create admin shops
+  # Warning: enabling this requires the player to be online. API requests will throw errors otherwise.
+  default_sign: false
+
+# Fuel configuration (required to make API calls)
+fuel:
+  # When true, all enabled strategies must provide fuel per call.
+  # When false, any available strategy will provide fuel for calls.
+  consume_from_all: true
+
+  # Base cost per request
+  cost_per_api_call: 0.1
+  # Cost for 'expensive' requests: get_entities get_inventory move_item
+  cost_per_expensive_api_call: 0.5
+  # Cost for 'set_block' request
+  cost_per_block_change_api_call: 1
+
+  # Note: if no strategies are enabled, requests will be free.
+
+  # Ratelimiting strategy: generates fuel at a steady rate
+  ratelimit_strategy:
+    enabled: false
+    fuel_per_sec: 1
+    max_fuel: 25
+  # Item strategy: items will be burned from connected chests.
+  item_strategy:
+    enabled: false
+    item: "minecraft:diamond"
+    fuel_provided: 1000
+  # Economy strategy: generates fuel using economy plugin money
+  economy_strategy:
+    enabled: false
+    fuel_price: 1 # money unit per fuel unit
+
+# The secret key. Remove this to automatically generate a new one.
+# Keep it private, as it's used to sign api tokens.
+# secret_key: null
