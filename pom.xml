@@ -6,7 +6,7 @@
 
     <groupId>eelfloat</groupId>
     <artifactId>replcraft</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <packaging>jar</packaging>
 
     <name>Replcraft</name>
@@ -101,6 +101,13 @@
             <artifactId>worldguard-bukkit</artifactId>
             <version>7.0.0</version>
             <scope>provided</scope>
+            <!-- https://www.spigotmc.org/threads/529005/#post-4279227 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bstats</groupId>
+                    <artifactId>bstats-bukkit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Javalin - https://javalin.io/tutorials/maven-setup -->

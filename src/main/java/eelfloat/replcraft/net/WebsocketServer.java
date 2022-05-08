@@ -158,9 +158,9 @@ public class WebsocketServer {
                 chargeFuel(client, ReplCraft.plugin.cost_per_expensive_api_call);
                 Block zero = client.getStructure().getBlock(0, 0, 0);
                 Block max = client.getStructure().getBlock(
-                    client.getStructure().inner_size_x(),
-                    client.getStructure().inner_size_y(),
-                    client.getStructure().inner_size_z()
+                    client.getStructure().inner_size_x()-1,
+                    client.getStructure().inner_size_y()-1,
+                    client.getStructure().inner_size_z()-1
                 );
 
                 JSONArray entities = new JSONArray();
@@ -209,6 +209,8 @@ public class WebsocketServer {
                 chargeFuel(client, ReplCraft.plugin.cost_per_expensive_api_call);
                 Block source = getBlock(client, request, "source_x", "source_y", "source_z");
                 Block target = getBlock(client, request, "target_x", "target_y", "target_z");
+                checkProtectionPlugins(client.getStructure().minecraft_uuid, source.getLocation());
+                checkProtectionPlugins(client.getStructure().minecraft_uuid, target.getLocation());
                 int index = request.getInt("index");
                 int amount = request.isNull("amount") ? 0 : request.getInt("amount");
 
@@ -332,6 +334,7 @@ public class WebsocketServer {
                 chargeFuel(client, ReplCraft.plugin.cost_per_expensive_api_call);
                 JSONArray ingredients = request.getJSONArray("ingredients");
                 Inventory output = getContainer(getBlock(client, request), "output container");
+                checkProtectionPlugins(client.getStructure().minecraft_uuid, output.getLocation());
 
                 class CraftingHelper {
                     final ItemStack item;
@@ -362,6 +365,7 @@ public class WebsocketServer {
                     int index = reference.getInt("index");
                     ItemStack item = getItem(block, String.format("ingredient %d block", i), index);
                     Location location = block.getLocation();
+                    checkProtectionPlugins(client.getStructure().minecraft_uuid, location);
                     CraftingHelper new_or_existing = items.stream()
                         .filter(helper -> helper != null && helper.location.equals(location) && helper.index == index)
                         .findFirst()
@@ -591,7 +595,7 @@ public class WebsocketServer {
         }
         if (ReplCraft.plugin.world_guard) {
             ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(location));
-            if (set.queryState(null, ReplCraft.plugin.flag) == StateFlag.State.DENY) {
+            if (set.queryState(null, ReplCraft.plugin.worldGuard.flag) == StateFlag.State.DENY) {
                 throw new ApiError("invalid operation", "This block is protected by WorldGuard.");
             }
         }

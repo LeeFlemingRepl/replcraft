@@ -66,23 +66,20 @@ public final class ReplCraft extends JavaPlugin {
     public PermissionProvider permissionProvider;
     /** The cryptographic key used to sign auth tokens */
     public Key key = null;
-    /** WorldGuard state flag for `replcraft` */
-    public StateFlag flag = null;
     public CoreProtectAPI coreProtect;
+    public WorldGuardIntegration worldGuard;
 
     @Override
     public void onLoad() {
+        plugin = this;
+        logger = Bukkit.getLogger();
         if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
-            flag = new StateFlag("replcraft", false);
-            WorldGuard.getInstance().getFlagRegistry().register(flag);
+            worldGuard = new WorldGuardIntegration();
         }
     }
 
     @Override
     public void onEnable() {
-        plugin = this;
-        logger = Bukkit.getLogger();
-
         saveDefaultConfig();
         FileConfiguration config = getConfig();
 

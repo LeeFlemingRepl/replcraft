@@ -1,0 +1,6 @@
+# Environment-specific deployment scripts
+development.sh
+
+# IntelliJ stuff
+target
+.idea

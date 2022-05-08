@@ -54,7 +54,7 @@ fuel:
   # Item strategy: items will be burned from connected chests.
   item_strategy:
     enabled: false
-    item: "minecraft:diamond"
+    item: "DIAMOND"
     fuel_provided: 1000
   # Economy strategy: generates fuel using economy plugin money
   economy_strategy:
