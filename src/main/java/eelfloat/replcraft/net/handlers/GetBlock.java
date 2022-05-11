@@ -7,8 +7,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "get_block", permission = "replcraft.api.get_block", cost = FuelCost.Regular)
+    
 public class GetBlock implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "get_block";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.get_block";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Regular;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         response.put("block", getBlock(client, request).getBlockData().getAsString());

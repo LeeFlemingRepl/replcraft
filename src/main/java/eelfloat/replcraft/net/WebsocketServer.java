@@ -58,9 +58,7 @@ public class WebsocketServer {
     }
 
     private void register(WebsocketActionHandler handler) {
-        // I thought I was writing Rust and then realized I can't do
-        // `WebsocketAction + WebsocketActionHandler` as a type...
-        this.routes.put(((WebsocketAction) handler).route(), handler);
+        this.routes.put(handler.route(), handler);
     }
 
     public void onMessage(WsMessageContext ctx) {
@@ -78,14 +76,14 @@ public class WebsocketServer {
             WebsocketActionHandler handler = this.routes.get(action);
             if (handler == null) throw new ApiError("bad request", "Unknown action");
 
-            if (((WebsocketAction) handler).authenticated() && client.getStructure() == null) {
+            if (handler.authenticated() && client.getStructure() == null) {
                 String error = client.isInvalidated()
                     ? "Structure was invalidated"
                     : "Connection isn't authenticated yet";
                 throw new ApiError("unauthenticated", error);
             }
 
-            String permission = ((WebsocketAction) handler).permission();
+            String permission = handler.permission();
             if (!permission.isEmpty()) {
                 OfflinePlayer player = client.getStructure().getPlayer();
                 World world = client.getStructure().getWorld();
@@ -100,7 +98,7 @@ public class WebsocketServer {
             String finalNonce = nonce;
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
-                    double fuelCost = ((WebsocketAction) handler).cost().toDouble();
+                    double fuelCost = handler.cost().toDouble();
                     if (!client.useFuel(fuelCost)) {
                         String message = String.format(
                             "out of fuel (cost: %s). available strategies: provide %s of %s.",

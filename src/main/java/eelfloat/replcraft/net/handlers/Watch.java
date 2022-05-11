@@ -7,8 +7,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "watch", permission = "replcraft.api.watch", cost = FuelCost.Regular)
+    
 public class Watch implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "watch";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.watch";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Regular;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         client.watch(getBlock(client, request));

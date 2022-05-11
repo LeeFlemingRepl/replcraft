@@ -13,8 +13,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "get_entities", permission = "replcraft.api.get_entities", cost = FuelCost.Expensive)
+    
 public class GetEntities implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "get_entities";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.get_entities";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Expensive;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block zero = client.getStructure().getBlock(0, 0, 0);

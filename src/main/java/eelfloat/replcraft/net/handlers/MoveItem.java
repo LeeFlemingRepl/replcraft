@@ -12,8 +12,28 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 
-@WebsocketAction(route = "move_item", permission = "replcraft.api.move_item", cost = FuelCost.Expensive)
+    
 public class MoveItem implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "move_item";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.move_item";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Expensive;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block source = ApiUtil.getBlock(client, request, "source_x", "source_y", "source_z");

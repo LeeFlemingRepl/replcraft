@@ -17,8 +17,28 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-@WebsocketAction(route = "craft", permission = "replcraft.api.craft", cost = FuelCost.Expensive)
+    
 public class Craft implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "craft";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.craft";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Expensive;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         JSONArray ingredients = request.getJSONArray("ingredients");

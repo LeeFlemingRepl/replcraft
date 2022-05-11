@@ -11,8 +11,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "get_inventory", permission = "replcraft.api.get_inventory", cost = FuelCost.Expensive)
+    
 public class GetInventory implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "get_inventory";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.get_inventory";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Expensive;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         JSONArray items = new JSONArray();

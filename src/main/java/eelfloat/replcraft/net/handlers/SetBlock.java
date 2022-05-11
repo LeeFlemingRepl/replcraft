@@ -21,8 +21,28 @@ import org.json.JSONObject;
 
 import java.util.Collection;
 
-@WebsocketAction(route = "set_block", permission = "replcraft.api.set_block", cost = FuelCost.BlockChange)
+    
 public class SetBlock implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "set_block";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.set_block";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.BlockChange;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         try {

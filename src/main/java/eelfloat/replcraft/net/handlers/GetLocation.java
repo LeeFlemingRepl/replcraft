@@ -7,8 +7,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "get_location", permission = "replcraft.api.get_location", cost = FuelCost.Regular)
+    
 public class GetLocation implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "get_location";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.get_location";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Regular;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         response.put("x", client.getStructure().inner_min_x());

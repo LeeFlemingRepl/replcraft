@@ -7,8 +7,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "watch_all", permission = "replcraft.api.watch_all", cost = FuelCost.Expensive)
+    
 public class WatchAll implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "watch_all";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.watch_all";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Expensive;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         client.setWatchAll(true);

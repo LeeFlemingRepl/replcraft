@@ -8,8 +8,27 @@ import eelfloat.replcraft.net.Client;
 import io.javalin.websocket.WsMessageContext;
 import org.json.JSONObject;
 
-@WebsocketAction(route = "authenticate", permission = "", cost = FuelCost.None, authenticated = false)
 public class Authenticate implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "authenticate";
+    }
+
+    @Override
+    public String permission() {
+        return null;
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.None;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return false;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         client.setStructure(

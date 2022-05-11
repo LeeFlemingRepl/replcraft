@@ -7,8 +7,28 @@ import org.json.JSONObject;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "poll", permission = "replcraft.api.poll", cost = FuelCost.Regular)
+    
 public class Poll implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "poll";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.poll";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.Regular;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         client.poll(getBlock(client, request));

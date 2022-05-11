@@ -17,8 +17,28 @@ import org.json.JSONObject;
 import static eelfloat.replcraft.util.ApiUtil.checkProtectionPlugins;
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-@WebsocketAction(route = "set_sign_text", permission = "replcraft.api.set_sign_text", cost = FuelCost.BlockChange)
+    
 public class SetSignText implements WebsocketActionHandler {
+    @Override
+    public String route() {
+        return "set_sign_text";
+    }
+
+    @Override
+    public String permission() {
+        return "replcraft.api.set_sign_text";
+    }
+
+    @Override
+    public FuelCost cost() {
+        return FuelCost.BlockChange;
+    }
+
+    @Override
+    public boolean authenticated() {
+        return true;
+    }
+
     @Override
     public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block block = getBlock(client, request);
