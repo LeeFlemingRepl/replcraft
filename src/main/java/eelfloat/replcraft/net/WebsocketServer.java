@@ -4,6 +4,7 @@ import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.handlers.*;
+import eelfloat.replcraft.util.ApiUtil;
 import io.javalin.Javalin;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
@@ -84,7 +85,7 @@ public class WebsocketServer {
             }
 
             String permission = handler.permission();
-            if (!permission.isEmpty()) {
+            if (permission != null) {
                 OfflinePlayer player = client.getStructure().getPlayer();
                 World world = client.getStructure().getWorld();
                 if (!ReplCraft.plugin.permissionProvider.hasPermission(player, world, permission))
@@ -99,7 +100,15 @@ public class WebsocketServer {
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
                     double fuelCost = handler.cost().toDouble();
-                    if (!client.useFuel(fuelCost)) {
+                    boolean freeFuel = (
+                        client.getStructure() != null &&
+                        ReplCraft.plugin.world_guard &&
+                        ApiUtil.checkFlagOnStructure(
+                            client.getStructure(),
+                            ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
+                        )
+                    );
+                    if (!freeFuel && !client.useFuel(fuelCost)) {
                         String message = String.format(
                             "out of fuel (cost: %s). available strategies: provide %s of %s.",
                             fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", client.getFuelSources()

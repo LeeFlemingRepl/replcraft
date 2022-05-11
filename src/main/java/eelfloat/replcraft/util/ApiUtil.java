@@ -6,6 +6,7 @@ import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.Client;
 import me.ryanhamshire.GriefPrevention.Claim;
@@ -71,10 +72,21 @@ public class ApiUtil {
         }
         if (ReplCraft.plugin.world_guard) {
             ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(location));
-            if (set.queryState(null, ReplCraft.plugin.worldGuard.flag) == StateFlag.State.DENY) {
+            if (set.queryState(null, ReplCraft.plugin.worldGuard.replcraft_enabled) != StateFlag.State.ALLOW) {
                 throw new ApiError("invalid operation", "This block is protected by WorldGuard.");
             }
         }
+    }
+
+    /**
+     * Check if a WorldGuard flag is set on a given structure. The flag is checked at the structure's sign.
+     * @param structure the structure to check
+     * @param flag the flag to check for
+     * @return true if the flag is ALLOW
+     */
+    public static boolean checkFlagOnStructure(Structure structure, StateFlag flag) {
+        ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(structure.sign.getLocation()));
+        return set.queryState(null, flag) == StateFlag.State.ALLOW;
     }
 
     /**
