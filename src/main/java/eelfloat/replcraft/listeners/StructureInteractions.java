@@ -2,7 +2,7 @@ package eelfloat.replcraft.listeners;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.Util;
+import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -41,7 +41,7 @@ public class StructureInteractions implements Listener {
         if (item.getType() == Material.STICK) {
             boolean tryPrint = false;
             try {
-                Structure structure = Util.verifyStructure(block);
+                Structure structure = StructureUtil.verifyStructure(block);
                 if (structure.location_equals(boundStructures.get(uuid))) {
                     tryPrint = true;
                 } else {
@@ -95,7 +95,7 @@ public class StructureInteractions implements Listener {
             boolean permAdmin = player.hasPermission("replcraft.auth.admin");
             boolean permPublic = player.hasPermission("replcraft.auth.public");
             boolean permSelf = player.hasPermission("replcraft.auth.self");
-            Util.verifySign(block, uuid, username -> {
+            StructureUtil.verifySign(block, uuid, username -> {
                 checkedUsername.set(username);
                 if (username.equals("@ADMIN")) {
                     usedPermission.set("admin");

@@ -2,7 +2,7 @@ package eelfloat.replcraft.net;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.Util;
+import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.strategies.FuelStrategy;
 import io.javalin.websocket.WsContext;
@@ -131,7 +131,7 @@ public class Client {
                         "Revalidating structure %s due to block change at %s",
                         this.structure, location
                     ));
-                    this.structure = Util.verifyToken(this.authentication);
+                    this.structure = StructureUtil.verifyToken(this.authentication);
                     this.invalidated = false;
                     return;
                 } catch (InvalidStructure e) {

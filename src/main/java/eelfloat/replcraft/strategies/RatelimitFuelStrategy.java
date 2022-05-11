@@ -1,7 +1,5 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.ReplCraft;
-
 public class RatelimitFuelStrategy extends FuelStrategy {
     private long last_check = System.currentTimeMillis();
     private final double fuel_per_sec;
@@ -10,6 +8,7 @@ public class RatelimitFuelStrategy extends FuelStrategy {
     public RatelimitFuelStrategy(double fuel_per_sec, double max_fuel) {
         this.fuel_per_sec = fuel_per_sec;
         this.max_fuel = max_fuel;
+        this.spare_fuel = max_fuel;
     }
 
     @Override
