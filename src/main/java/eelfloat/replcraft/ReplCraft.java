@@ -1,8 +1,5 @@
 package eelfloat.replcraft;
 
-import com.sk89q.worldguard.WorldGuard;
-import com.sk89q.worldguard.protection.flags.Flag;
-import com.sk89q.worldguard.protection.flags.StateFlag;
 import eelfloat.replcraft.listeners.StructureInteractions;
 import eelfloat.replcraft.listeners.StructureUpdates;
 import eelfloat.replcraft.net.Client;
@@ -30,17 +27,17 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.security.Key;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public final class ReplCraft extends JavaPlugin {
     public static ReplCraft plugin;
     public Logger logger = null;
 
-    public Material frame_material = Material.IRON_BLOCK;
+    public List<StructureMaterial> frame_materials = new ArrayList<>();
 
     public WebsocketServer websocketServer = null;
     public String public_address = null;
@@ -88,6 +85,32 @@ public final class ReplCraft extends JavaPlugin {
         listen_port = config.getInt("listen_port");
 
         creative_mode = config.getBoolean("creative_mode");
+
+        // https://gist.github.com/RezzedUp/d7957af10bfbfc6837ae1a4b55975f40
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(ReplCraft.class.getClassLoader());
+        websocketServer = new WebsocketServer();
+        Thread.currentThread().setContextClassLoader(classLoader);
+
+
+        for (Map<?, ?> structureType: config.getMapList("materials")) {
+            String name = (String) structureType.get("name");
+            int maxSize = ((Number) structureType.get("max_size")).intValue();
+            double fuelMultiplier = ((Number) structureType.get("fuel_multiplier")).doubleValue();
+            Set<Material> valid = ((Collection<String>) structureType.get("valid")).stream().map(matName -> {
+                Material mat = Material.matchMaterial(matName);
+                if (mat == null) throw new RuntimeException("Failed to parse material " + matName);
+                return mat;
+            }).collect(Collectors.toSet());
+            Set<String> apis = new HashSet<>();
+            if (Objects.equals(structureType.get("apis"), "all")) {
+                apis.addAll(websocketServer.apis.keySet());
+            } else {
+                apis.addAll((Collection<String>) structureType.get("apis"));
+            }
+            frame_materials.add(new StructureMaterial(name, maxSize, fuelMultiplier, valid, apis));
+        }
+
 
         block_protection = config.getBoolean("protection.default_block");
         sign_protection = config.getBoolean("protection.default_sign");
@@ -160,12 +183,6 @@ public final class ReplCraft extends JavaPlugin {
             config.set("secret_key", Encoders.BASE64.encode(key.getEncoded()));
             saveConfig();
         }
-
-        // https://gist.github.com/RezzedUp/d7957af10bfbfc6837ae1a4b55975f40
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(ReplCraft.class.getClassLoader());
-        websocketServer = new WebsocketServer();
-        Thread.currentThread().setContextClassLoader(classLoader);
 
         logger.info("Hello, world!");
         getServer().getPluginManager().registerEvents(new StructureInteractions(), this);

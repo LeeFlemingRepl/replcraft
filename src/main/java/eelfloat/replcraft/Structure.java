@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class Structure {
+    public final StructureMaterial material;
     public String replit_username;
     public String replit_repl_id;
     public String minecraft_username;
@@ -48,10 +49,12 @@ public class Structure {
      * @param max_z the upper z coordinate of this structure's AABB
      */
     public Structure(
+        StructureMaterial material,
         String replit_username, String replit_repl_id, String minecraft_username, UUID minecraft_uuid,
         Block sign, HashSet<Location> frameBlocks, List<Block> chests,
         int min_x, int min_y, int min_z, int max_x, int max_y, int max_z
     ) {
+        this.material = material;
         this.replit_username = replit_username;
         this.replit_repl_id = replit_repl_id;
         this.minecraft_username = minecraft_username;

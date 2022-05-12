@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WebsocketServer {
     public final Map<WsContext, Client> clients = new ConcurrentHashMap<>();
-    public final Map<String, WebsocketActionHandler> routes = new ConcurrentHashMap<>();
+    public final Map<String, WebsocketActionHandler> apis = new ConcurrentHashMap<>();
     private final Javalin app;
 
     public WebsocketServer() {
@@ -59,10 +59,10 @@ public class WebsocketServer {
     }
 
     private void register(WebsocketActionHandler handler) {
-        this.routes.put(handler.route(), handler);
+        this.apis.put(handler.route(), handler);
     }
 
-    public void onMessage(WsMessageContext ctx) {
+    private void onMessage(WsMessageContext ctx) {
         String nonce = null;
         try {
             JSONObject request = new JSONObject(ctx.message());
@@ -74,7 +74,7 @@ public class WebsocketServer {
             Client client = clients.get(ctx);
             String action = request.getString("action");
 
-            WebsocketActionHandler handler = this.routes.get(action);
+            WebsocketActionHandler handler = this.apis.get(action);
             if (handler == null) throw new ApiError("bad request", "Unknown action");
 
             if (handler.authenticated() && client.getStructure() == null) {
@@ -82,6 +82,10 @@ public class WebsocketServer {
                     ? "Structure was invalidated"
                     : "Connection isn't authenticated yet";
                 throw new ApiError("unauthenticated", error);
+            }
+
+            if (client.getStructure() != null && !client.getStructure().material.apis.contains(action)) {
+                throw new ApiError("bad request", "This structure type doesn't support this API call.");
             }
 
             String permission = handler.permission();
@@ -99,7 +103,7 @@ public class WebsocketServer {
             String finalNonce = nonce;
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
-                    double fuelCost = handler.cost().toDouble();
+                    double fuelCost = handler.cost().toDouble() * client.getStructure().material.fuelMultiplier;
                     boolean freeFuel = (
                         client.getStructure() != null &&
                         ReplCraft.plugin.world_guard &&

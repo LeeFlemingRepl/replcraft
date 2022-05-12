@@ -2,6 +2,7 @@ package eelfloat.replcraft.util;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
+import eelfloat.replcraft.StructureMaterial;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import io.jsonwebtoken.Claims;
@@ -16,6 +17,7 @@ import org.bukkit.block.data.type.WallSign;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class StructureUtil {
     /**
@@ -81,12 +83,19 @@ public class StructureUtil {
         List<Block> chests = new ArrayList<>();
 
         to_explore.push(starting_block.getLocation());
+        StructureMaterial material = null;
 
         int explored = 0;
         while (!to_explore.isEmpty()) {
             explored += 1;
-            if (explored > 1000) {
-                throw new InvalidStructure("Too many connected " + ReplCraft.plugin.frame_material + " blocks.");
+            if (material == null && explored > 100) {
+                throw new InvalidStructure("Too many connected blocks before finding any valid structure material.");
+            }
+            if (material != null && explored > material.max_size) {
+                throw new InvalidStructure(String.format(
+                    "Too many connected %s blocks. The limit is %d for this material type.",
+                    material.name, material.max_size
+                ));
             }
             Block block = to_explore.pop().getBlock();
             for (BlockFace face: BlockFace.values()) {
@@ -97,7 +106,18 @@ public class StructureUtil {
                     seen.add(location);
                     chests.add(relative);
                 }
-                if (relative.getType() == ReplCraft.plugin.frame_material && !seen.contains(location)) {
+                boolean isValidStructureMaterial = material == null
+                    ? ReplCraft.plugin.frame_materials.stream()
+                        .flatMap(mats -> mats.validMaterials.stream())
+                        .anyMatch(mat -> relative.getType() == mat)
+                    : material.validMaterials.contains(relative.getType());
+                if (isValidStructureMaterial && !seen.contains(location)) {
+                    if (material == null) {
+                        material = ReplCraft.plugin.frame_materials.stream()
+                            .filter(mats -> mats.validMaterials.contains(relative.getType()))
+                            .findFirst().orElseThrow(() -> new RuntimeException("unreachable"));
+                        ReplCraft.plugin.logger.info("Structure type determined to be " + material.name);
+                    }
                     seen.add(location);
                     to_explore.push(location);
 
@@ -110,44 +130,53 @@ public class StructureUtil {
                 }
             }
         }
+        ReplCraft.plugin.logger.info(String.format("Structure min [%s %s %s] max [%s %s %s]", min_x, min_y, min_z, max_x, max_y, max_z));
 
         // See cube.png
 
+        if (material == null) {
+            throw new InvalidStructure("Structure must contain at least one valid structure block from any structure type.");
+        }
+
         // Top edges
-        check_axis(new Location(starting_block.getWorld(), min_x, max_y, max_z), 1, 0, 0, max_x - min_x); // 1
-        check_axis(new Location(starting_block.getWorld(), max_x, max_y, max_z), 0, 0, -1, max_z - min_z); // 2
-        check_axis(new Location(starting_block.getWorld(), max_x, max_y, min_z), -1, 0, 0, max_x - min_x); // 3
-        check_axis(new Location(starting_block.getWorld(), min_x, max_y, min_z), 0, 0, 1, max_z - min_z); // 4
+        check_axis(material, new Location(starting_block.getWorld(), min_x, max_y, max_z), 1, 0, 0, max_x - min_x); // 1
+        check_axis(material, new Location(starting_block.getWorld(), max_x, max_y, max_z), 0, 0, -1, max_z - min_z); // 2
+        check_axis(material, new Location(starting_block.getWorld(), max_x, max_y, min_z), -1, 0, 0, max_x - min_x); // 3
+        check_axis(material, new Location(starting_block.getWorld(), min_x, max_y, min_z), 0, 0, 1, max_z - min_z); // 4
 
         // Side edges
-        check_axis(new Location(starting_block.getWorld(), max_x, min_y, max_z), 0, 1, 0, max_y - min_y); // 5
-        check_axis(new Location(starting_block.getWorld(), max_x, min_y, min_z), 0, 1, 0, max_y - min_y); // 6
-        check_axis(new Location(starting_block.getWorld(), min_x, min_y, min_z), 0, 1, 0, max_y - min_y); // 7
-        check_axis(new Location(starting_block.getWorld(), min_x, min_y, max_z), 0, 1, 0, max_y - min_y); // 8
+        check_axis(material, new Location(starting_block.getWorld(), max_x, min_y, max_z), 0, 1, 0, max_y - min_y); // 5
+        check_axis(material, new Location(starting_block.getWorld(), max_x, min_y, min_z), 0, 1, 0, max_y - min_y); // 6
+        check_axis(material, new Location(starting_block.getWorld(), min_x, min_y, min_z), 0, 1, 0, max_y - min_y); // 7
+        check_axis(material, new Location(starting_block.getWorld(), min_x, min_y, max_z), 0, 1, 0, max_y - min_y); // 8
 
         // Bottom edges
-        check_axis(new Location(starting_block.getWorld(), min_x, min_y, max_z), 1, 0, 0, max_x - min_x); // 9
-        check_axis(new Location(starting_block.getWorld(), max_x, min_y, max_z), 0, 0, -1, max_z - min_z); // 10
-        check_axis(new Location(starting_block.getWorld(), max_x, min_y, min_z), -1, 0, 0, max_x - min_x); // 11
-        check_axis(new Location(starting_block.getWorld(), min_x, min_y, min_z), 0, 0, 1, max_z - min_z); // 12
+        check_axis(material, new Location(starting_block.getWorld(), min_x, min_y, max_z), 1, 0, 0, max_x - min_x); // 9
+        check_axis(material, new Location(starting_block.getWorld(), max_x, min_y, max_z), 0, 0, -1, max_z - min_z); // 10
+        check_axis(material, new Location(starting_block.getWorld(), max_x, min_y, min_z), -1, 0, 0, max_x - min_x); // 11
+        check_axis(material, new Location(starting_block.getWorld(), min_x, min_y, min_z), 0, 0, 1, max_z - min_z); // 12
 
         Structure structure = new Structure(
+            material,
             null, null, null, null,
             null, seen, chests,
             min_x, min_y, min_z, max_x, max_y, max_z
         );
 
         if (structure.inner_size_x() < 1 || structure.inner_size_y() < 1 || structure.inner_size_z() < 1) {
-            throw new InvalidStructure("Structure must start on an iron block and have a nonzero interior size.");
+            throw new InvalidStructure("Structure must have a nonzero interior size.");
         }
         return structure;
     }
 
-    private static void check_axis(Location start, int dx, int dy, int dz, int length) throws InvalidStructure {
+    private static void check_axis(StructureMaterial material, Location start, int dx, int dy, int dz, int length) throws InvalidStructure {
         for (int i = 0; i < length; i++) {
             Location location = start.clone().add(dx * i, dy * i, dz * i);
-            if (location.getBlock().getType() != ReplCraft.plugin.frame_material) {
-                throw new InvalidStructure("Missing " + ReplCraft.plugin.frame_material + " at " + location);
+            if (!material.validMaterials.contains(location.getBlock().getType())) {
+                throw new InvalidStructure(String.format(
+                    "Missing any valid block for a(n) %s structure at %s",
+                    material.name, location
+                ));
             }
         }
     }

@@ -1,5 +1,6 @@
-# Environment-specific deployment scripts
+# Environment-specific deployment stuff
 development.sh
+server
 
 # IntelliJ stuff
 target

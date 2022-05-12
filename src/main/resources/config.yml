@@ -10,6 +10,55 @@ listen_port: 28080
 # May also be used for other APIs in the future (e.g. being able to spawn arbitrary items)
 creative_mode: false
 
+# What materials each structure can be made out of
+# Different materials support different max sizes and APIs
+materials:
+  - name: glass
+    max_size: 25
+    fuel_multiplier: 1.0
+    valid:
+      - "minecraft:glass"
+    apis:
+      - "watch"
+      - "unwatch"
+      - "poll"
+      - "unpoll"
+      - "get_block"
+      - "get_entities"
+      - "get_inventory"
+      - "get_sign_text"
+      - "get_size"
+      - "get_location"
+      - "get_power_level"
+
+  - name: copper
+    max_size: 100
+    fuel_multiplier: 1.0
+    valid:
+      - "minecraft:copper_block"
+      - "minecraft:exposed_copper"
+      - "minecraft:weathered_copper"
+      - "minecraft:oxidized_copper"
+      - "minecraft:waxed_copper_block"
+      - "minecraft:waxed_exposed_copper"
+      - "minecraft:waxed_weathered_copper"
+      - "minecraft:waxed_oxidized_copper"
+    apis: all
+
+  - name: iron
+    max_size: 1000
+    fuel_multiplier: 1.0
+    valid:
+      - "minecraft:iron_block"
+    apis: all
+
+  - name: golden
+    max_size: 1000
+    fuel_multiplier: 0.5
+    valid:
+      - "minecraft:gold_block"
+    apis: all
+
 protection:
   # Uses Vault to obtain permissions for OfflinePlayers
   # Warning: disabling this requires the player to be online. API requests will throw errors otherwise.
