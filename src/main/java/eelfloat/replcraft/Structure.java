@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Structure {
@@ -205,6 +206,28 @@ public class Structure {
             max_y == structure.max_y &&
             max_z == structure.max_z
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Structure structure = (Structure) o;
+        return
+            min_x == structure.min_x &&
+            min_y == structure.min_y &&
+            min_z == structure.min_z &&
+            max_x == structure.max_x &&
+            max_y == structure.max_y &&
+            max_z == structure.max_z &&
+            Objects.equals(material, structure.material) &&
+            Objects.equals(minecraft_uuid, structure.minecraft_uuid) &&
+            Objects.equals(sign.getLocation(), structure.sign.getLocation());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(min_x, min_y, min_z, max_x, max_y, max_z, material, minecraft_uuid, sign.getLocation());
     }
 
     @Override

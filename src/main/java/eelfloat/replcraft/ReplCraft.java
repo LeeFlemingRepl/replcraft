@@ -7,10 +7,9 @@ import eelfloat.replcraft.net.WebsocketServer;
 import eelfloat.replcraft.permissions.DefaultPermissionProvider;
 import eelfloat.replcraft.permissions.PermissionProvider;
 import eelfloat.replcraft.permissions.VaultPermissionProvider;
-import eelfloat.replcraft.strategies.EconomyFuelStrategy;
-import eelfloat.replcraft.strategies.ItemFuelStrategy;
-import eelfloat.replcraft.strategies.RatelimitFuelStrategy;
-import eelfloat.replcraft.strategies.FuelStrategy;
+import eelfloat.replcraft.strategies.*;
+import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
+import eelfloat.replcraft.util.ExpirableCacheMap;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.io.Encoders;
@@ -66,6 +65,9 @@ public final class ReplCraft extends JavaPlugin {
     public CoreProtectAPI coreProtect;
     public WorldGuardIntegration worldGuard;
 
+    public ExpirableCacheMap<Structure, BoxedDoubleButActuallyUseful> leftOverFuel = new ExpirableCacheMap<>(60*60*1000);
+    public ExpirableCacheMap<UUID, RatelimitFuelStrategy> ratelimiters = new ExpirableCacheMap<>(60*1000);
+
     @Override
     public void onLoad() {
         plugin = this;
@@ -92,11 +94,11 @@ public final class ReplCraft extends JavaPlugin {
         websocketServer = new WebsocketServer();
         Thread.currentThread().setContextClassLoader(classLoader);
 
-
         for (Map<?, ?> structureType: config.getMapList("materials")) {
             String name = (String) structureType.get("name");
             int maxSize = ((Number) structureType.get("max_size")).intValue();
             double fuelMultiplier = ((Number) structureType.get("fuel_multiplier")).doubleValue();
+            //noinspection unchecked
             Set<Material> valid = ((Collection<String>) structureType.get("valid")).stream().map(matName -> {
                 Material mat = Material.matchMaterial(matName);
                 if (mat == null) throw new RuntimeException("Failed to parse material " + matName);
@@ -106,11 +108,11 @@ public final class ReplCraft extends JavaPlugin {
             if (Objects.equals(structureType.get("apis"), "all")) {
                 apis.addAll(websocketServer.apis.keySet());
             } else {
+                //noinspection unchecked
                 apis.addAll((Collection<String>) structureType.get("apis"));
             }
             frame_materials.add(new StructureMaterial(name, maxSize, fuelMultiplier, valid, apis));
         }
-
 
         block_protection = config.getBoolean("protection.default_block");
         sign_protection = config.getBoolean("protection.default_sign");
@@ -140,8 +142,20 @@ public final class ReplCraft extends JavaPlugin {
         if (config.getBoolean("fuel.ratelimit_strategy.enabled")) {
             double fuel_per_sec = config.getDouble("fuel.ratelimit_strategy.fuel_per_sec");
             double max_fuel = config.getDouble("fuel.ratelimit_strategy.max_fuel");
-            strategies.add(client -> new RatelimitFuelStrategy(fuel_per_sec, max_fuel));
+            boolean shared = config.getBoolean("fuel.ratelimit_strategy.enabled");
+            strategies.add(client -> {
+                if (shared) {
+                    return ratelimiters.get(
+                        client.getStructure().minecraft_uuid,
+                        () -> new RatelimitFuelStrategy(fuel_per_sec, max_fuel)
+                    );
+                } else {
+                    return new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
+                }
+            });
         }
+
+        strategies.add(client -> new LeftoverFuelStrategy());
 
         if (config.getBoolean("fuel.item_strategy.enabled")) {
             String mat_name = config.getString("fuel.item_strategy.item", "");
@@ -187,9 +201,17 @@ public final class ReplCraft extends JavaPlugin {
         logger.info("Hello, world!");
         getServer().getPluginManager().registerEvents(new StructureInteractions(), this);
         getServer().getPluginManager().registerEvents(new StructureUpdates(), this);
+        //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(Client::pollOne);
-        }, 1, 1);
+        }, 0, 1);
+        //noinspection CodeBlock2Expr
+        getServer().getScheduler().runTaskTimer(plugin, () -> {
+            websocketServer.clients.values().forEach(client -> {
+                leftOverFuel.resetExpiration(client.getStructure());
+                ratelimiters.resetExpiration(client.getStructure().minecraft_uuid);
+            });
+        }, 0, 200);
     }
 
     @Override

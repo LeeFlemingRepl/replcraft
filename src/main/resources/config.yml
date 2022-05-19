@@ -98,6 +98,9 @@ fuel:
   # Ratelimiting strategy: generates fuel at a steady rate
   ratelimit_strategy:
     enabled: false
+    # If the ratelimit is shared between all of a player's connections
+    # May lead to high contention
+    shared: true
     fuel_per_sec: 1
     max_fuel: 25
   # Item strategy: items will be burned from connected chests.

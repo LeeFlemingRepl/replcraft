@@ -16,10 +16,10 @@ public class ItemFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public double generate(double fuel) {
+    public double generate(double fuel, Client client) {
         double generated = 0;
         while (generated < fuel) {
-            ItemStack stack = client.getStructure().findMaterial(this.material);
+            ItemStack stack = this.client.getStructure().findMaterial(this.material);
             if (stack == null) break;
             stack.setAmount(stack.getAmount() - 1);
             generated += fuel_per_item;

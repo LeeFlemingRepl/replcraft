@@ -2,9 +2,10 @@ package eelfloat.replcraft.net;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
+import eelfloat.replcraft.strategies.*;
+import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
 import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.InvalidStructure;
-import eelfloat.replcraft.strategies.FuelStrategy;
 import io.javalin.websocket.WsContext;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -50,7 +51,10 @@ public class Client {
 
     /** @return a human readable list of fuel sources */
     public List<String> getFuelSources() {
-        return this.strategies.stream().map(Object::toString).collect(Collectors.toList());
+        return this.strategies.stream()
+            .filter(strat -> !strat.isHidden())
+            .map(Object::toString)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -64,13 +68,13 @@ public class Client {
         final double tolerance = 0.01;
         if (ReplCraft.plugin.consume_from_all) {
             double finalAmount = amount;
-            if (!strategies.stream().allMatch(strat -> Math.abs(strat.consume(finalAmount) - finalAmount) < tolerance)) {
+            if (!strategies.stream().allMatch(strat -> Math.abs(strat.consume(finalAmount, this) - finalAmount) < tolerance)) {
                 strategies.forEach(FuelStrategy::cancel_and_restore);
                 return false;
             }
         } else {
             for (FuelStrategy strategy: strategies) {
-                amount -= strategy.consume(amount);
+                amount -= strategy.consume(amount, this);
             }
             if (amount > tolerance) {
                 strategies.forEach(FuelStrategy::cancel_and_restore);
@@ -187,6 +191,16 @@ public class Client {
     /** Disposes of the client */
     public void dispose() {
         if (this.structure != null) {
+            for (FuelStrategy strategy: this.strategies) {
+                if (strategy instanceof ItemFuelStrategy || strategy instanceof EconomyFuelStrategy) {
+                    BoxedDoubleButActuallyUseful leftover = ReplCraft.plugin.leftOverFuel.get(
+                        this.structure,
+                        () -> new BoxedDoubleButActuallyUseful(0.0)
+                    );
+                    leftover.value += strategy.getSpareFuel();
+                }
+            }
+
             this.structure.unchunkLoad();
             this.structure = null;
         }

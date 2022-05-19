@@ -1,6 +1,5 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.Client;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -18,13 +17,13 @@ public class EconomyFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    double generate(double fuel_amount) {
-        OfflinePlayer player = client.getStructure().getPlayer();
+    double generate(double fuel_amount, Client client) {
+        OfflinePlayer player = this.client.getStructure().getPlayer();
 
         double price = fuel_price * fuel_amount;
         if (price > this.economy.getBalance(player)) return 0;
 
-        EconomyResponse tx = this.economy.withdrawPlayer(player, client.getStructure().sign.getWorld().getName(), price);
+        EconomyResponse tx = this.economy.withdrawPlayer(player, this.client.getStructure().sign.getWorld().getName(), price);
         if (!tx.transactionSuccess()) return 0;
 
         return fuel_amount;
