@@ -5,7 +5,14 @@ api-version: 1.18
 authors: [ eelfloat ]
 softdepend: [ Vault, WorldGuard, GriefPrevention, CoreProtect ]
 
+commands:
+  transact:
+    description: Command Description
+    usage: /transact
+    permission: replcraft.transact
+
 permissions:
+  replcraft.transact: { default: true, description: "Allows use of the /transact command" }
   replcraft.auth.self: { default: true, description: "Allows obtaining tokens from signs with a matching username"}
   replcraft.auth.admin: { default: op, description: "Allows obtaining tokens from ANY sign, including those with the name '@ADMIN'"}
   replcraft.auth.public: { default: true, description: "Allows obtaining tokens from signs with the name '@PUBLIC'"}
@@ -28,3 +35,6 @@ permissions:
   replcraft.api.set_sign_text: { default: true, description: "Allows use of the `set_sign_text` api call"}
   replcraft.api.craft: { default: true, description: "Allows use of the `craft` api call"}
   replcraft.api.set_block: { default: true, description: "Allows use of the `set_block` api call"}
+  replcraft.api.respond: { default: true, description: "Allows use of the `respond` api call"}
+  replcraft.api.tell: { default: true, description: "Allows use of the `tell` api call"}
+  replcraft.api.pay: { default: true, description: "Allows use of the `pay` api call"}

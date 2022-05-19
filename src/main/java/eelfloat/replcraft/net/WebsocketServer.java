@@ -41,6 +41,9 @@ public class WebsocketServer {
         this.register(new UnwatchAll());
         this.register(new Watch());
         this.register(new WatchAll());
+        this.register(new Respond());
+        this.register(new Tell());
+        this.register(new Pay());
 
         app = Javalin.create();
         app.get("/", ctx -> ctx.result("Running ReplCraft v" + ReplCraft.plugin.getDescription().getVersion()));

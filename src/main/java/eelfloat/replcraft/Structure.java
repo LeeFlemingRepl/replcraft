@@ -196,6 +196,16 @@ public class Structure {
         return stack;
     }
 
+    public boolean contains(Location location) {
+        return Objects.equals(location.getWorld(), this.sign.getWorld()) &&
+            location.getX() >= this.min_x &&
+            location.getY() >= this.min_y &&
+            location.getZ() >= this.min_z &&
+            location.getX() <= this.max_x &&
+            location.getY() <= this.max_y &&
+            location.getZ() <= this.max_z;
+    }
+
     public boolean location_equals(Structure structure) {
         return (
             structure != null &&

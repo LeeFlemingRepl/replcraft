@@ -1,6 +1,7 @@
 package eelfloat.replcraft.util;
 
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class ExpirableCacheMap<K, V> {
@@ -8,6 +9,7 @@ public class ExpirableCacheMap<K, V> {
     public final HashMap<K, ExpirableEntry<V>> entries = new HashMap<>();
     /** How long entries are refreshed to live to*/
     private final long expireMs;
+    private BiConsumer<K, V> onExpire;
 
     private class ExpirableEntry<V> {
         /** The value for this entry */
@@ -30,7 +32,12 @@ public class ExpirableCacheMap<K, V> {
     }
 
     public ExpirableCacheMap(long expireMs) {
+        this(expireMs, (a, b) -> {});
+    }
+
+    public ExpirableCacheMap(long expireMs, BiConsumer<K, V> onExpire) {
         this.expireMs = expireMs;
+        this.onExpire = onExpire;
     }
 
     /**
@@ -46,6 +53,33 @@ public class ExpirableCacheMap<K, V> {
         }
         this.resetExpiration(key);
         return this.entries.get(key).expiree;
+    }
+
+    /**
+     * Removes an entry without calling the expiration callback
+     */
+    public V remove(K key) {
+        ExpirableEntry<V> removed = this.entries.remove(key);
+        if (removed != null) return removed.expiree;
+        return null;
+    }
+
+    public void set(K key, V value) {
+        ExpirableEntry<V> removed = this.entries.put(key, new ExpirableEntry<>(value));
+        if (removed != null) this.onExpire.accept(key, removed.expiree);
+    }
+
+    /**
+     * Removes expired values from the map and calls the expiration callback with anything that was removed.
+     */
+    public void expire() {
+        this.entries.entrySet().removeIf(next -> {
+            if (next.getValue().isExpired()) {
+                this.onExpire.accept(next.getKey(), next.getValue().expiree);
+                return true;
+            }
+            return false;
+        });
     }
 
     /**

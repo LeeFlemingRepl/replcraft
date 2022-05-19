@@ -1,9 +1,12 @@
 package eelfloat.replcraft.net;
 
+import com.google.gson.JsonObject;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
+import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.strategies.*;
 import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
+import eelfloat.replcraft.util.ExpirableCacheMap;
 import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import io.javalin.websocket.WsContext;
@@ -13,10 +16,10 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class Client {
@@ -87,6 +90,22 @@ public class Client {
         ctx.send(json.toString());
     }
 
+    public enum QueryStatus { Success, TimedOut }
+    public ExpirableCacheMap<Long, BiFunction<QueryStatus, JSONObject, ApiError>> queryCallbacks = new ExpirableCacheMap<>(
+    10 * 1000,
+        (key, value) -> value.apply(QueryStatus.TimedOut, null)
+    );
+    private long nonceIncr;
+    public void sendQuery(JSONObject json, BiFunction<QueryStatus, JSONObject, ApiError> callback) {
+        long nonce = nonceIncr++;
+        json.put("queryNonce", nonce);
+        this.send(json);
+        queryCallbacks.set(nonce, callback);
+    }
+    public void expireQueries() {
+        queryCallbacks.expire();
+    }
+
     /** Polls a single block, notifying the client if it changed. */
     public void pollOne() {
         if (this.structure == null) return;
@@ -107,6 +126,9 @@ public class Client {
 
         if (watchedBlocks.contains(location) || cause.equals("poll")) {
             JSONObject json = new JSONObject();
+            json.put("type", "block update");
+            // Backwards compat note: "event: ..." is only used for block events
+            // Use type for everything else, going forwards.
             json.put("event", "block update");
             json.put("cause", cause);
             json.put("x", location.getBlockX() - structure.inner_min_x());

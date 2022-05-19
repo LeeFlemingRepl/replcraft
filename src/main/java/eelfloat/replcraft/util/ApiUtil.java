@@ -12,11 +12,14 @@ import eelfloat.replcraft.net.Client;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimPermission;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.json.JSONObject;
@@ -147,6 +150,23 @@ public class ApiUtil {
 
     public static Block getBlock(Client client, JSONObject request) throws ApiError {
         return getBlock(client, request, "x", "y", "z");
+    }
+
+    public static OfflinePlayer getTargetPlayer(Client client, JSONObject request) throws ApiError {
+        String targetId = request.getString("target");
+        try {
+            UUID uuid = UUID.fromString(targetId);
+            return Bukkit.getOfflinePlayer(uuid);
+        } catch(IllegalArgumentException ex) {
+            Player target = ReplCraft.plugin.getServer().getPlayer(targetId);
+            if (target == null) {
+                throw new ApiError(
+                    "bad request",
+                    "Player with given name is not online. Use a UUID to pay to offline players."
+                );
+            }
+            return target;
+        }
     }
 
     public static Block getBlock(Client client, JSONObject request, String label_x, String label_y, String label_z) throws ApiError {

@@ -7,6 +7,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -53,6 +54,9 @@ public class GetEntities implements WebsocketActionHandler {
                 LivingEntity live = (LivingEntity) entity;
                 entity_json.put("health", live.getHealth());
                 entity_json.put("max_health", live.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+            }
+            if (entity instanceof Player) {
+                entity_json.put("player_uuid", entity.getUniqueId());
             }
             entity_json.put("x", entity.getLocation().getX() - client.getStructure().inner_min_x());
             entity_json.put("y", entity.getLocation().getY() - client.getStructure().inner_min_y());

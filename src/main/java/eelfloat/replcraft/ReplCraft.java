@@ -67,6 +67,7 @@ public final class ReplCraft extends JavaPlugin {
 
     public ExpirableCacheMap<Structure, BoxedDoubleButActuallyUseful> leftOverFuel = new ExpirableCacheMap<>(60*60*1000);
     public ExpirableCacheMap<UUID, RatelimitFuelStrategy> ratelimiters = new ExpirableCacheMap<>(60*1000);
+    public Economy economy;
 
     @Override
     public void onLoad() {
@@ -113,6 +114,12 @@ public final class ReplCraft extends JavaPlugin {
             }
             frame_materials.add(new StructureMaterial(name, maxSize, fuelMultiplier, valid, apis));
         }
+
+
+        Plugin vault = getServer().getPluginManager().getPlugin("Vault");
+        RegisteredServiceProvider<Economy> rspe = getServer().getServicesManager().getRegistration(Economy.class);
+        if (vault != null && rspe != null)
+            economy = rspe.getProvider();
 
         block_protection = config.getBoolean("protection.default_block");
         sign_protection = config.getBoolean("protection.default_sign");
@@ -167,20 +174,13 @@ public final class ReplCraft extends JavaPlugin {
 
         if (config.getBoolean("fuel.economy_strategy.enabled")) {
             double fuel_price = config.getDouble("fuel.economy_strategy.fuel_price");
-
-            Plugin vault = getServer().getPluginManager().getPlugin("Vault");
             if (vault == null) throw new RuntimeException("Vault API not found, install or disable economy_strategy.");
-
-            RegisteredServiceProvider<Economy> rspe = getServer().getServicesManager().getRegistration(Economy.class);
             if (rspe == null) throw new RuntimeException("Economy API provider not found, install one or disable economy_strategy.");
-
-            final Economy economy = rspe.getProvider();
-            strategies.add(client -> new EconomyFuelStrategy(client, economy, fuel_price));
+            strategies.add(client -> new EconomyFuelStrategy(client, fuel_price));
         }
 
         permissionProvider = new DefaultPermissionProvider();
         if (config.getBoolean("protection.permissions_vault")) {
-            Plugin vault = getServer().getPluginManager().getPlugin("Vault");
             if (vault == null) throw new RuntimeException("Vault API not found, install or disable permissions_vault.");
 
             RegisteredServiceProvider<Permission> rspp = getServer().getServicesManager().getRegistration(Permission.class);
@@ -201,17 +201,20 @@ public final class ReplCraft extends JavaPlugin {
         logger.info("Hello, world!");
         getServer().getPluginManager().registerEvents(new StructureInteractions(), this);
         getServer().getPluginManager().registerEvents(new StructureUpdates(), this);
+        this.getCommand("transact").setExecutor(new TransactExecutor());
         //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(Client::pollOne);
         }, 0, 1);
-        //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(client -> {
                 leftOverFuel.resetExpiration(client.getStructure());
                 ratelimiters.resetExpiration(client.getStructure().minecraft_uuid);
+                client.expireQueries();
             });
-        }, 0, 200);
+            leftOverFuel.expire();
+            ratelimiters.expire();
+        }, 0, 100);
     }
 
     @Override
