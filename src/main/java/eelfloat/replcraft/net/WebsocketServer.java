@@ -103,21 +103,23 @@ public class WebsocketServer {
             String finalNonce = nonce;
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
-                    double fuelCost = handler.cost().toDouble() * client.getStructure().material.fuelMultiplier;
-                    boolean freeFuel = (
-                        client.getStructure() != null &&
-                        ReplCraft.plugin.world_guard &&
-                        ApiUtil.checkFlagOnStructure(
-                            client.getStructure(),
-                            ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
-                        )
-                    );
-                    if (!freeFuel && !client.useFuel(fuelCost)) {
-                        String message = String.format(
-                            "out of fuel (cost: %s). available strategies: provide %s of %s.",
-                            fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", client.getFuelSources()
+                    if (client.getStructure() != null) {
+                        double fuelCost = handler.cost().toDouble() * client.getStructure().material.fuelMultiplier;
+                        boolean freeFuel = (
+                            client.getStructure() != null &&
+                            ReplCraft.plugin.world_guard &&
+                            ApiUtil.checkFlagOnStructure(
+                                client.getStructure(),
+                                ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
+                            )
                         );
-                        throw new ApiError("out of fuel", message);
+                        if (!freeFuel && !client.useFuel(fuelCost)) {
+                            String message = String.format(
+                                "out of fuel (cost: %s). available strategies: provide %s of %s.",
+                                fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", client.getFuelSources()
+                            );
+                            throw new ApiError("out of fuel", message);
+                        }
                     }
 
                     handler.execute(client, ctx, request, response);

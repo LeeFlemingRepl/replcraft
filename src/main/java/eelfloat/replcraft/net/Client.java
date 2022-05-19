@@ -40,13 +40,10 @@ public class Client {
     /** The current index in polledBlocks */
     private int pollingPosition = 0;
 
-    private final List<FuelStrategy> strategies;
+    private final List<FuelStrategy> strategies = new ArrayList<>();
 
     public Client(WsContext ctx) {
         this.ctx = ctx;
-        this.strategies = ReplCraft.plugin.strategies.stream()
-            .map(strat -> strat.apply(this))
-            .collect(Collectors.toList());
     }
 
     /** @return a human readable list of fuel sources */
@@ -185,6 +182,11 @@ public class Client {
         if (this.structure != null) this.structure.unchunkLoad();
         this.authentication = authentication;
         this.structure = structure;
+        this.strategies.addAll(
+            ReplCraft.plugin.strategies.stream()
+                .map(strat -> strat.apply(this))
+                .collect(Collectors.toList())
+        );
         this.structure.chunkLoad();
     }
 
