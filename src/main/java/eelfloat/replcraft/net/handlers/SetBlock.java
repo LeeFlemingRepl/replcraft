@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.BlockData;
@@ -101,12 +102,24 @@ public class SetBlock implements WebsocketActionHandler {
                 }
             }
 
-            target.setBlockData(blockData);
+            state.setBlockData(blockData);
+            state.update(true, true);
+
+            // Force physics updates around this block, to prevent floating-air farms
+            for (BlockFace face: BlockFace.values()) {
+                BlockState nState = target.getRelative(face).getState();
+                if (nState.getType() == Material.AIR) {
+                    nState.setType(Material.COBBLESTONE);
+                    nState.update(true, true);
+                    nState.setType(Material.AIR);
+                    nState.update(true, true);
+                }
+            }
+
             if (ReplCraft.plugin.core_protect) {
                 String player = client.getStructure().getPlayer().getName();
                 ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", target.getLocation(), material, blockData);
             }
-            target.getState().update(false, true);
 
             for (ItemStack drop: drops) {
                 ItemStack leftover = destination != null
