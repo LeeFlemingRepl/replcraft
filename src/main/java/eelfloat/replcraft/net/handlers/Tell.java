@@ -6,7 +6,6 @@ import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.Client;
 import io.javalin.websocket.WsMessageContext;
 import org.bukkit.entity.Player;
-import org.checkerframework.checker.units.qual.A;
 import org.json.JSONObject;
 
 import java.util.UUID;

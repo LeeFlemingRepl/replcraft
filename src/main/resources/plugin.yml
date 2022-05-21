@@ -8,7 +8,7 @@ softdepend: [ Vault, WorldGuard, GriefPrevention, CoreProtect ]
 commands:
   transact:
     description: Command Description
-    usage: /transact
+    usage: /transact <amount> [extra text sent to replcraft script]
     permission: replcraft.transact
 
 permissions:

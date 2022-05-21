@@ -58,6 +58,7 @@ public class SetBlock implements WebsocketActionHandler {
 
             BlockData blockData = ReplCraft.plugin.getServer().createBlockData(blockDataString);
             Material material = ApiUtil.remapBlockMaterialToItemMaterial(blockData.getMaterial());
+
             if (material != Material.AIR && !ReplCraft.plugin.creative_mode) {
                 ItemStack stack = null;
                 if (source != null) {
@@ -105,6 +106,8 @@ public class SetBlock implements WebsocketActionHandler {
                 String player = client.getStructure().getPlayer().getName();
                 ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", target.getLocation(), material, blockData);
             }
+            target.getState().update(false, true);
+
             for (ItemStack drop: drops) {
                 ItemStack leftover = destination != null
                         ? destination.addItem(drop).values().stream().findFirst().orElse(null)

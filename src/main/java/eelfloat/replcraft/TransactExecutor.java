@@ -38,8 +38,10 @@ public class TransactExecutor implements CommandExecutor {
             return true;
         }
 
-        double amount = Double.parseDouble(args[0]);
-        if (Double.isNaN(amount) || !Double.isFinite(amount)) {
+        double amount;
+        try {
+            amount = Double.parseDouble(args[0]);
+        } catch(NumberFormatException ignored) {
             return false;
         }
 

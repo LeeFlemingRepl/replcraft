@@ -150,13 +150,18 @@ public final class ReplCraft extends JavaPlugin {
             double fuel_per_sec = config.getDouble("fuel.ratelimit_strategy.fuel_per_sec");
             double max_fuel = config.getDouble("fuel.ratelimit_strategy.max_fuel");
             boolean shared = config.getBoolean("fuel.ratelimit_strategy.enabled");
+            logger.info("Creating new " + (shared ? "shared" : "independent") + " ratelimit strategies");
             strategies.add(client -> {
                 if (shared) {
                     return ratelimiters.get(
                         client.getStructure().minecraft_uuid,
-                        () -> new RatelimitFuelStrategy(fuel_per_sec, max_fuel)
+                        () -> {
+                            logger.info("Created new global ratelimit strategy for " + client.getStructure().minecraft_username);
+                            return new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
+                        }
                     );
                 } else {
+                    logger.info("Created new per-connection ratelimit strategy");
                     return new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
                 }
             });
@@ -208,6 +213,7 @@ public final class ReplCraft extends JavaPlugin {
         }, 0, 1);
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(client -> {
+                if (client.getStructure() == null) return;
                 leftOverFuel.resetExpiration(client.getStructure());
                 ratelimiters.resetExpiration(client.getStructure().minecraft_uuid);
                 client.expireQueries();

@@ -144,7 +144,9 @@ public class ApiUtil {
             case MELON_STEM:   return Material.MELON_SEEDS;
             case BEETROOTS:    return Material.BEETROOT_SEEDS;
             case COCOA:        return Material.COCOA_BEANS;
-            default: return material;
+            case CARROTS:      return Material.CARROT;
+            case POTATOES:     return Material.POTATO;
+            default:           return material;
         }
     }
 
