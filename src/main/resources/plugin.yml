@@ -7,12 +7,17 @@ softdepend: [ Vault, WorldGuard, GriefPrevention, CoreProtect ]
 
 commands:
   transact:
-    description: Command Description
+    description: Transacts with a structure, sending it some money and a command. The structure can then do whatever it wants in response.
     usage: /transact <amount> [extra text sent to replcraft script]
     permission: replcraft.transact
+  recipe:
+    description: Lists detailed information for a recipe
+    usage: /recipe <result>
+    permission: replcraft.recipe
 
 permissions:
   replcraft.transact: { default: true, description: "Allows use of the /transact command" }
+  replcraft.recipe: { default: true, description: "Allows use of the /recipe command" }
   replcraft.auth.self: { default: true, description: "Allows obtaining tokens from signs with a matching username"}
   replcraft.auth.admin: { default: op, description: "Allows obtaining tokens from ANY sign, including those with the name '@ADMIN'"}
   replcraft.auth.public: { default: true, description: "Allows obtaining tokens from signs with the name '@PUBLIC'"}

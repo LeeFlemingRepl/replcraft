@@ -1,5 +1,6 @@
-package eelfloat.replcraft;
+package eelfloat.replcraft.command;
 
+import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.Client;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Location;
