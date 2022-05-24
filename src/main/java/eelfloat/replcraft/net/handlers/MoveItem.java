@@ -10,9 +10,10 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.json.JSONObject;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
 
-    
+
 public class MoveItem implements WebsocketActionHandler {
     @Override
     public String route() {
@@ -42,6 +43,7 @@ public class MoveItem implements WebsocketActionHandler {
         ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, target.getLocation());
         int index = request.getInt("index");
         int amount = request.isNull("amount") ? 0 : request.getInt("amount");
+        int targetIndex = request.isNull("target_index") ? -1 : request.getInt("target_index");
 
         Inventory source_inventory = ApiUtil.getContainer(source, "source block");
         Inventory target_inventory = ApiUtil.getContainer(target, "target block");
@@ -60,9 +62,34 @@ public class MoveItem implements WebsocketActionHandler {
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", target.getLocation());
         }
 
-        HashMap<Integer, ItemStack> leftover = target_inventory.addItem(moved);
-        if (!leftover.values().isEmpty()) {
-            for (ItemStack value: leftover.values()) {
+        ArrayList<ItemStack> leftover = new ArrayList<>();
+        ReplCraft.plugin.logger.info(String.format("index %s targetIndex %s amount %s", index, targetIndex, amount));
+        if (targetIndex == -1) {
+            leftover.addAll(target_inventory.addItem(moved).values());
+            ReplCraft.plugin.logger.info("moving all");
+        } else {
+            ItemStack existingItem = target_inventory.getItem(targetIndex);
+            if (existingItem == null) {
+                target_inventory.setItem(targetIndex, moved);
+                ReplCraft.plugin.logger.info("no existing item");
+            } else {
+                if (!existingItem.isSimilar(moved)) {
+                    throw new ApiError(
+                        "invalid operation",
+                        "failed to move item: item exists in target slot and is a different type"
+                    );
+                }
+                int mergedAmount = existingItem.getAmount() + moved.getAmount();
+                int mergedAmountCapped = Math.min(mergedAmount, existingItem.getMaxStackSize());
+                int unmergableAmount = Math.max(mergedAmount - mergedAmountCapped, 0);
+                existingItem.setAmount(Math.min(mergedAmount, existingItem.getMaxStackSize()));
+                moved.setAmount(unmergableAmount);
+                ReplCraft.plugin.logger.info(String.format("ma %s mac %s uma %s", mergedAmount, mergedAmountCapped, unmergableAmount));
+                if (unmergableAmount > 0) leftover.add(moved);
+            }
+        }
+        if (!leftover.isEmpty()) {
+            for (ItemStack value: leftover) {
                 source_inventory.addItem(value);
             }
             throw new ApiError("invalid operation", "failed to move all items");
