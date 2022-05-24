@@ -48,7 +48,7 @@ public class Tell implements WebsocketActionHandler {
             throw new ApiError("bad request", "Player is not inside the structure");
 
         String message = request.getString("message");
-        if (message.length() > 100)
+        if (message.length() > 1000)
             throw new ApiError("bad request", "Message too long");
 
         ReplCraft.plugin.logger.info(String.format(
