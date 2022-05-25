@@ -54,7 +54,6 @@ public class MoveItem implements WebsocketActionHandler {
             throw new ApiError("invalid operation", "tried to move more items than there are");
         }
         ItemStack moved = item.clone();
-        item.setAmount(item.getAmount() - amount);
         moved.setAmount(amount);
         if (ReplCraft.plugin.core_protect) {
             String player = client.getStructure().getPlayer().getName();
@@ -67,10 +66,12 @@ public class MoveItem implements WebsocketActionHandler {
         if (targetIndex == -1) {
             leftover.addAll(target_inventory.addItem(moved).values());
             ReplCraft.plugin.logger.info("moving all");
+            item.setAmount(item.getAmount() - amount);
         } else {
             ItemStack existingItem = target_inventory.getItem(targetIndex);
             if (existingItem == null) {
                 target_inventory.setItem(targetIndex, moved);
+                item.setAmount(item.getAmount() - amount);
                 ReplCraft.plugin.logger.info("no existing item");
             } else {
                 if (!existingItem.isSimilar(moved)) {
@@ -84,6 +85,7 @@ public class MoveItem implements WebsocketActionHandler {
                 int unmergableAmount = Math.max(mergedAmount - mergedAmountCapped, 0);
                 existingItem.setAmount(Math.min(mergedAmount, existingItem.getMaxStackSize()));
                 moved.setAmount(unmergableAmount);
+                item.setAmount(item.getAmount() - amount);
                 ReplCraft.plugin.logger.info(String.format("ma %s mac %s uma %s", mergedAmount, mergedAmountCapped, unmergableAmount));
                 if (unmergableAmount > 0) leftover.add(moved);
             }
