@@ -28,6 +28,11 @@ public class ItemFuelStrategy extends FuelStrategy {
     }
 
     @Override
+    public String name() {
+        return "item";
+    }
+
+    @Override
     public String toString() {
         return String.format("ItemFuelStrategy { %s fuel per %s }", fuel_per_item, material);
     }

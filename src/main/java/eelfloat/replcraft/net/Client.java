@@ -1,9 +1,9 @@
 package eelfloat.replcraft.net;
 
-import com.google.gson.JsonObject;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
+import eelfloat.replcraft.net.handlers.WebsocketActionHandler;
 import eelfloat.replcraft.strategies.*;
 import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
 import eelfloat.replcraft.util.ExpirableCacheMap;
@@ -17,8 +17,6 @@ import org.bukkit.block.data.BlockData;
 import org.json.JSONObject;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -43,10 +41,18 @@ public class Client {
     /** The current index in polledBlocks */
     private int pollingPosition = 0;
 
-    private List<FuelStrategy> strategies = new ArrayList<>();
+    public List<FuelStrategy> strategies = new ArrayList<>();
+    /** A map of API routes to their associated ratetracker */
+    public HashMap<String, RateTracker> rateTrackers = new HashMap<>();
 
     public Client(WsContext ctx) {
         this.ctx = ctx;
+    }
+
+    public RateTracker tracker(WebsocketActionHandler handler) {
+        if (!this.rateTrackers.containsKey(handler.route()))
+            this.rateTrackers.put(handler.route(), new RateTracker());
+        return this.rateTrackers.get(handler.route());
     }
 
     /** @return a human readable list of fuel sources */

@@ -69,4 +69,9 @@ public abstract class FuelStrategy {
     public final void commit() {
         lastConsumption = 0;
     }
+
+    /**
+     * @return the unique, human-readable name of the fuel strategy
+     */
+    public abstract String name();
 }

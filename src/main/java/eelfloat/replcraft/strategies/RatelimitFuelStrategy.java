@@ -23,6 +23,11 @@ public class RatelimitFuelStrategy extends FuelStrategy {
     }
 
     @Override
+    public String name() {
+        return "ratelimit";
+    }
+
+    @Override
     public String toString() {
         return String.format("RatelimitStrategy { %s fuel per second (max %s) }", fuel_per_sec, max_fuel);
     }

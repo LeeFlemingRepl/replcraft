@@ -29,6 +29,11 @@ public class EconomyFuelStrategy extends FuelStrategy {
     }
 
     @Override
+    public String name() {
+        return "economy";
+    }
+
+    @Override
     public String toString() {
         return String.format("EconomyFuelStrategy { $%s per unit of fuel }", fuel_price);
     }

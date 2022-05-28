@@ -23,4 +23,9 @@ public class LeftoverFuelStrategy extends FuelStrategy {
     public boolean isHidden() {
         return true;
     }
+
+    @Override
+    public String name() {
+        return "leftover";
+    }
 }

@@ -44,13 +44,17 @@ public class WebsocketServer {
         this.register(new Respond());
         this.register(new Tell());
         this.register(new Pay());
+        this.register(new FuelInfo());
 
         app = Javalin.create();
         app.get("/", ctx -> ctx.result("Running ReplCraft v" + ReplCraft.plugin.getDescription().getVersion()));
         app.ws("/gateway", ws -> {
             ws.onConnect(ctx -> {
                 ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " connected.");
-                clients.put(ctx, new Client(ctx));
+                Client client = new Client(ctx);
+                for (WebsocketActionHandler tracker: this.apis.values())
+                    client.tracker(tracker);
+                clients.put(ctx, client);
             });
             ws.onClose(ctx -> {
                 ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " disconnected.");
@@ -123,6 +127,8 @@ public class WebsocketServer {
                             );
                             throw new ApiError("out of fuel", message);
                         }
+
+                        client.tracker(handler).queue(fuelCost);
                     }
 
                     handler.execute(client, ctx, request, response);
