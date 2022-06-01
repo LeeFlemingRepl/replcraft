@@ -13,6 +13,15 @@ public class RatelimitFuelStrategy extends FuelStrategy {
         this.spareFuel = max_fuel;
     }
 
+    /** Updates the spare fuel count immediately */
+    public void updateSpareFuelNow() {
+        long now = System.currentTimeMillis();
+        double generated = fuel_per_sec * (now - last_check) / 1000.0;
+        double space_left = max_fuel - spareFuel;
+        this.spareFuel += Math.min(space_left, generated);
+        last_check = now;
+    }
+
     @Override
     public double generate(double fuel_cost, Client client) {
         long now = System.currentTimeMillis();

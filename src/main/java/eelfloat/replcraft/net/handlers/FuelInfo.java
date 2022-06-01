@@ -6,6 +6,7 @@ import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.RateTracker;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.strategies.FuelStrategy;
+import eelfloat.replcraft.strategies.RatelimitFuelStrategy;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -71,6 +72,8 @@ public class FuelInfo implements WebsocketActionHandler {
 
         JSONArray strategies = new JSONArray();
         for (FuelStrategy strategy: ctx.client.strategies) {
+            if (strategy instanceof RatelimitFuelStrategy)
+                ((RatelimitFuelStrategy) strategy).updateSpareFuelNow();
             JSONObject strategyJson = new JSONObject();
             strategyJson.put("strategy", strategy.name());
             strategyJson.put("spareFuel", strategy.getSpareFuel());
