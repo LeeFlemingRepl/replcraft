@@ -28,7 +28,7 @@ public class Authenticate implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
         ctx.client.setStructure(
             StructureUtil.verifyToken(ctx.request.getString("token")),
                 ctx.request.getString("token")

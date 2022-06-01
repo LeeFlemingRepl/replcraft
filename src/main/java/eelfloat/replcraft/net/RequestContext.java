@@ -17,7 +17,9 @@ public class RequestContext {
     public final String nonce;
     public final boolean freeFuel;
 
-    public RequestContext(Client client, WsMessageContext ctx, JSONObject request, JSONObject response, String nonce, boolean freeFuel) {
+    public RequestContext(
+        Client client, WsMessageContext ctx, JSONObject request, JSONObject response, String nonce, boolean freeFuel
+    ) {
         this.client = client;
         this.ctx = ctx;
         this.request = request;
@@ -25,22 +27,4 @@ public class RequestContext {
         this.nonce = nonce;
         this.freeFuel = freeFuel;
     }
-
-    /**
-     * Evaluates a continuation to completion
-     * @param continuation the continuation to evaluate
-     */
-    public void evaluateContinuation(ActionContinuation continuation) {
-        try {
-            ActionContinuation next = continuation.execute(this);
-            if (next != null) {
-                Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> this.evaluateContinuation(next));
-            } else {
-                this.ctx.send(this.response.toString());
-            }
-        } catch (Exception ex) {
-            this.ctx.send(WebsocketServer.toClientError(ex, this.nonce).toString());
-        }
-    }
-
 }

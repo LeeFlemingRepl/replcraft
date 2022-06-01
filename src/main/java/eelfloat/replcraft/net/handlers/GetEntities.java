@@ -36,7 +36,7 @@ public class GetEntities implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+    public ActionContinuation execute(RequestContext ctx) {
         Block zero = ctx.client.getStructure().getBlock(0, 0, 0);
         Block max = ctx.client.getStructure().getBlock(
                 ctx.client.getStructure().inner_size_x()-1,

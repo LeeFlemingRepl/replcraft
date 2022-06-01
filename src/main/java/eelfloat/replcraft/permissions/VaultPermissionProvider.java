@@ -18,7 +18,7 @@ public class VaultPermissionProvider implements PermissionProvider {
     }
 
     @Override
-    public boolean hasPermission(OfflinePlayer player, World world, String permission) throws ApiError {
+    public boolean hasPermission(OfflinePlayer player, World world, String permission) {
         return this.permission.playerHas(world.getName(), player, permission);
     }
 }

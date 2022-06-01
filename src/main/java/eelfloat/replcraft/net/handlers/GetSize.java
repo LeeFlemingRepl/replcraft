@@ -28,7 +28,7 @@ public class GetSize implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+    public ActionContinuation execute(RequestContext ctx) {
         ctx.response.put("x", ctx.client.getStructure().inner_size_x());
         ctx.response.put("y", ctx.client.getStructure().inner_size_y());
         ctx.response.put("z", ctx.client.getStructure().inner_size_z());

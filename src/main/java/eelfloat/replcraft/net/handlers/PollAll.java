@@ -28,7 +28,7 @@ public class PollAll implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+    public ActionContinuation execute(RequestContext ctx) {
         ctx.client.setPollAll(true);
         return null;
     }

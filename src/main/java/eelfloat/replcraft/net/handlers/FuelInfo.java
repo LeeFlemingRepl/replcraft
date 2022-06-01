@@ -35,7 +35,7 @@ public class FuelInfo implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) {
         JSONArray connections = new JSONArray();
         for (Client client: ReplCraft.plugin.websocketServer.clients.values()) {
             Structure current = ctx.client.getStructure();

@@ -30,7 +30,7 @@ public class Tell implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
         String target = ctx.request.getString("target");
 
         Player player = ReplCraft.plugin.getServer().getPlayerExact(target);

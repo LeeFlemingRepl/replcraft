@@ -30,7 +30,7 @@ public class Pay implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
         if (ReplCraft.plugin.economy == null) {
             throw new ApiError("bad request", "This command requires Vault to be installed on the server.");
         }

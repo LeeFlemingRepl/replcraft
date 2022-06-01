@@ -28,7 +28,7 @@ public class GetLocation implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+    public ActionContinuation execute(RequestContext ctx) {
         ctx.response.put("x", ctx.client.getStructure().inner_min_x());
         ctx.response.put("y", ctx.client.getStructure().inner_min_y());
         ctx.response.put("z", ctx.client.getStructure().inner_min_z());

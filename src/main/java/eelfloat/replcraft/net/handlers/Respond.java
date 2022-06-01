@@ -30,7 +30,7 @@ public class Respond implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
         BiFunction<Client.QueryStatus, JSONObject, ApiError> cb = ctx.client.queryCallbacks.remove(ctx.request.getLong("queryNonce"));
         if (cb == null) throw new ApiError("invalid operation", "No such callback. It may have expired.");
         ApiError error = cb.apply(Client.QueryStatus.Success, ctx.request);

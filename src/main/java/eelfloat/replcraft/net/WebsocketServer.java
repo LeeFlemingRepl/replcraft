@@ -131,14 +131,33 @@ public class WebsocketServer {
                         client.tracker(handler).queue(fuelCost);
                     }
 
-                    RequestContext requestContext = new RequestContext(client, ctx, request, response, finalNonce, freeFuel);
-                    requestContext.evaluateContinuation(handler);
+                    RequestContext requestContext = new RequestContext(
+                        client, ctx, request, response, finalNonce, freeFuel
+                    );
+                    evaluateContinuation(requestContext, handler);
                 } catch(Exception ex) {
                     ctx.send(toClientError(ex, finalNonce).toString());
                 }
             });
         } catch (Exception ex) {
             ctx.send(toClientError(ex, nonce).toString());
+        }
+    }
+
+    /**
+     * Evaluates a continuation to completion
+     * @param continuation the continuation to evaluate
+     */
+    public static void evaluateContinuation(RequestContext ctx, ActionContinuation continuation) {
+        try {
+            ActionContinuation next = continuation.execute(ctx);
+            if (next != null) {
+                Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> evaluateContinuation(ctx, next));
+            } else {
+                ctx.ctx.send(ctx.response.toString());
+            }
+        } catch (Exception ex) {
+            ctx.ctx.send(WebsocketServer.toClientError(ex, ctx.nonce).toString());
         }
     }
 
