@@ -1,12 +1,10 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
-import org.json.JSONObject;
 
 public class Authenticate implements WebsocketActionHandler {
     @Override
@@ -30,12 +28,12 @@ public class Authenticate implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
-        client.setStructure(
-            StructureUtil.verifyToken(request.getString("token")),
-            request.getString("token")
+    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+        ctx.client.setStructure(
+            StructureUtil.verifyToken(ctx.request.getString("token")),
+                ctx.request.getString("token")
         );
-        ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " authenticated: " + client.getStructure());
+        ReplCraft.plugin.logger.info("Client " + ctx.ctx.session.getRemoteAddress() + " authenticated: " + ctx.client.getStructure());
         return null;
     }
 }

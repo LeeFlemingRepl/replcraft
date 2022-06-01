@@ -1,10 +1,10 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -62,10 +62,10 @@ public class Craft implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
-        JSONArray ingredients = request.getJSONArray("ingredients");
-        Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(client, request), "output container");
-        ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, output.getLocation());
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+        JSONArray ingredients = ctx.request.getJSONArray("ingredients");
+        Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(ctx.client, ctx.request), "output container");
+        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, output.getLocation());
 
         // A list of crafting helpers. Crafting helpers pointing at the same location are duplicated
         // in the list. Some slots are null to account for spaces.
@@ -77,11 +77,11 @@ public class Craft implements WebsocketActionHandler {
             }
 
             JSONObject reference = ingredients.getJSONObject(i);
-            Block block = ApiUtil.getBlock(client, reference);
+            Block block = ApiUtil.getBlock(ctx.client, reference);
             int index = reference.getInt("index");
             ItemStack item = ApiUtil.getItem(block, String.format("ingredient %d block", i), index);
             Location location = block.getLocation();
-            ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, location);
+            ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, location);
             CraftingHelper new_or_existing = items.stream()
                     .filter(helper -> helper != null && helper.location.equals(location) && helper.index == index)
                     .findFirst()
@@ -95,7 +95,7 @@ public class Craft implements WebsocketActionHandler {
         while (iter.hasNext()) {
             Recipe next = iter.next();
             // Try the recipe
-            if (tryRecipe(client, next, items, output)) return null;
+            if (tryRecipe(ctx.client, next, items, output)) return null;
             // Reset items since this recipe failed
             for (CraftingHelper item: items)
                 if (item != null) item.timesUsed = 0;

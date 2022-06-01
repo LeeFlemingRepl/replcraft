@@ -1,9 +1,7 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
-import org.json.JSONObject;
+import eelfloat.replcraft.net.RequestContext;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
@@ -30,8 +28,8 @@ public class Poll implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
-        client.poll(getBlock(client, request));
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+        ctx.client.poll(getBlock(ctx.client, ctx.request));
         return null;
     }
 }

@@ -6,8 +6,8 @@ import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.RateTracker;
+import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.strategies.FuelStrategy;
-import io.javalin.websocket.WsMessageContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -35,10 +35,10 @@ public class FuelInfo implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client currentClient, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
         JSONArray connections = new JSONArray();
         for (Client client: ReplCraft.plugin.websocketServer.clients.values()) {
-            Structure current = currentClient.getStructure();
+            Structure current = ctx.client.getStructure();
             Structure structure = client.getStructure();
             if (structure == null) continue;
             if (!current.getPlayer().getUniqueId().equals(structure.getPlayer().getUniqueId())) continue;
@@ -60,25 +60,25 @@ public class FuelInfo implements WebsocketActionHandler {
 
             connections.put(connection);
         }
-        response.put("connections", connections);
+        ctx.response.put("connections", connections);
 
         JSONObject apis = new JSONObject();
         for (WebsocketActionHandler api: ReplCraft.plugin.websocketServer.apis.values()) {
             JSONObject apiJson = new JSONObject();
             apiJson.put("baseFuelCost", api.cost().toDouble());
-            apiJson.put("fuelCost", api.cost().toDouble() * currentClient.getStructure().material.fuelMultiplier);
+            apiJson.put("fuelCost", api.cost().toDouble() * ctx.client.getStructure().material.fuelMultiplier);
             apis.put(api.route(), apiJson);
         }
-        response.put("apis", apis);
+        ctx.response.put("apis", apis);
 
         JSONArray strategies = new JSONArray();
-        for (FuelStrategy strategy: currentClient.strategies) {
+        for (FuelStrategy strategy: ctx.client.strategies) {
             JSONObject strategyJson = new JSONObject();
             strategyJson.put("strategy", strategy.name());
             strategyJson.put("spareFuel", strategy.getSpareFuel());
             strategies.put(strategyJson);
         }
-        response.put("strategies", strategies);
+        ctx.response.put("strategies", strategies);
         return null;
     }
 }

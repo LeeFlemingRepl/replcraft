@@ -3,10 +3,8 @@ package eelfloat.replcraft.net.handlers;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
+import eelfloat.replcraft.net.RequestContext;
 import org.bukkit.entity.Player;
-import org.json.JSONObject;
 
 import java.util.UUID;
 
@@ -32,8 +30,8 @@ public class Tell implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
-        String target = request.getString("target");
+    public ActionContinuation execute(RequestContext ctx) throws InvalidStructure, ApiError {
+        String target = ctx.request.getString("target");
 
         Player player = ReplCraft.plugin.getServer().getPlayerExact(target);
         if (player == null) {
@@ -44,22 +42,22 @@ public class Tell implements WebsocketActionHandler {
         if (player == null)
             throw new ApiError("bad request", "Unknown player");
 
-        if (!client.getStructure().contains(player.getLocation()))
+        if (!ctx.client.getStructure().contains(player.getLocation()))
             throw new ApiError("bad request", "Player is not inside the structure");
 
-        String message = request.getString("message");
+        String message = ctx.request.getString("message");
         if (message.length() > 1000)
             throw new ApiError("bad request", "Message too long");
 
         ReplCraft.plugin.logger.info(String.format(
             "%s told %s via script: %s",
-            client.getStructure().getPlayer().getName(),
+                ctx.client.getStructure().getPlayer().getName(),
             player.getName(),
             message
         ));
         player.sendMessage(String.format(
             "[Replcraft] %s sent you a message via script: %s",
-            client.getStructure().getPlayer().getName(),
+                ctx.client.getStructure().getPlayer().getName(),
             message
         ));
         return null;

@@ -1,14 +1,12 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -35,14 +33,14 @@ public class MoveItem implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
-        Block source = ApiUtil.getBlock(client, request, "source_x", "source_y", "source_z");
-        Block target = ApiUtil.getBlock(client, request, "target_x", "target_y", "target_z");
-        ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, source.getLocation());
-        ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, target.getLocation());
-        int index = request.getInt("index");
-        int amount = request.isNull("amount") ? 0 : request.getInt("amount");
-        int targetIndex = request.isNull("target_index") ? -1 : request.getInt("target_index");
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+        Block source = ApiUtil.getBlock(ctx.client, ctx.request, "source_x", "source_y", "source_z");
+        Block target = ApiUtil.getBlock(ctx.client, ctx.request, "target_x", "target_y", "target_z");
+        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, source.getLocation());
+        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, target.getLocation());
+        int index = ctx.request.getInt("index");
+        int amount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
+        int targetIndex = ctx.request.isNull("target_index") ? -1 : ctx.request.getInt("target_index");
 
         Inventory source_inventory = ApiUtil.getContainer(source, "source block");
         Inventory target_inventory = ApiUtil.getContainer(target, "target block");
@@ -55,7 +53,7 @@ public class MoveItem implements WebsocketActionHandler {
         ItemStack moved = item.clone();
         moved.setAmount(amount);
         if (ReplCraft.plugin.core_protect) {
-            String player = client.getStructure().getPlayer().getName();
+            String player = ctx.client.getStructure().getPlayer().getName();
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", source.getLocation());
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", target.getLocation());
         }

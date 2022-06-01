@@ -1,8 +1,7 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
+import eelfloat.replcraft.net.RequestContext;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -37,12 +36,12 @@ public class GetEntities implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
-        Block zero = client.getStructure().getBlock(0, 0, 0);
-        Block max = client.getStructure().getBlock(
-                client.getStructure().inner_size_x()-1,
-                client.getStructure().inner_size_y()-1,
-                client.getStructure().inner_size_z()-1
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
+        Block zero = ctx.client.getStructure().getBlock(0, 0, 0);
+        Block max = ctx.client.getStructure().getBlock(
+                ctx.client.getStructure().inner_size_x()-1,
+                ctx.client.getStructure().inner_size_y()-1,
+                ctx.client.getStructure().inner_size_z()-1
         );
 
         JSONArray entities = new JSONArray();
@@ -58,12 +57,12 @@ public class GetEntities implements WebsocketActionHandler {
             if (entity instanceof Player) {
                 entity_json.put("player_uuid", entity.getUniqueId());
             }
-            entity_json.put("x", entity.getLocation().getX() - client.getStructure().inner_min_x());
-            entity_json.put("y", entity.getLocation().getY() - client.getStructure().inner_min_y());
-            entity_json.put("z", entity.getLocation().getZ() - client.getStructure().inner_min_z());
+            entity_json.put("x", entity.getLocation().getX() - ctx.client.getStructure().inner_min_x());
+            entity_json.put("y", entity.getLocation().getY() - ctx.client.getStructure().inner_min_y());
+            entity_json.put("z", entity.getLocation().getZ() - ctx.client.getStructure().inner_min_z());
             entities.put(entity_json);
         }
-        response.put("entities", entities);
+        ctx.response.put("entities", entities);
         return null;
     }
 }

@@ -1,8 +1,7 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
-import io.javalin.websocket.WsMessageContext;
+import eelfloat.replcraft.net.RequestContext;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.inventory.ItemStack;
@@ -39,9 +38,9 @@ public class GetInventory implements WebsocketActionHandler {
     }
 
     @Override
-    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(RequestContext ctx) throws ApiError {
         JSONArray items = new JSONArray();
-        BlockState state = getBlock(client, request).getState();
+        BlockState state = getBlock(ctx.client, ctx.request).getState();
         if (!(state instanceof Container)) {
             throw new ApiError("invalid operation", "block isn't a container");
         }
@@ -81,7 +80,7 @@ public class GetInventory implements WebsocketActionHandler {
 
             items.put(jsonitem);
         }
-        response.put("items", items);
+        ctx.response.put("items", items);
         return null;
     }
 }

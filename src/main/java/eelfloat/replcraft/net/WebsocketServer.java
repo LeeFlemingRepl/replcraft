@@ -109,9 +109,10 @@ public class WebsocketServer {
             String finalNonce = nonce;
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
+                    boolean freeFuel = false;
                     if (client.getStructure() != null) {
                         double fuelCost = handler.cost().toDouble() * client.getStructure().material.fuelMultiplier;
-                        boolean freeFuel = (
+                        freeFuel = (
                             client.getStructure() != null &&
                             ReplCraft.plugin.world_guard &&
                             ApiUtil.checkFlagOnStructure(
@@ -130,7 +131,7 @@ public class WebsocketServer {
                         client.tracker(handler).queue(fuelCost);
                     }
 
-                    RequestContext requestContext = new RequestContext(client, ctx, request, response, finalNonce);
+                    RequestContext requestContext = new RequestContext(client, ctx, request, response, finalNonce, freeFuel);
                     requestContext.evaluateContinuation(handler);
                 } catch(Exception ex) {
                     ctx.send(toClientError(ex, finalNonce).toString());
@@ -141,43 +142,7 @@ public class WebsocketServer {
         }
     }
 
-    /**
-     * A context for a client request, scoped to run only on the main thread.
-     */
-    class RequestContext {
-        final Client client;
-        final WsMessageContext ctx;
-        final JSONObject request;
-        final JSONObject response;
-        final String nonce;
-
-        RequestContext(Client client, WsMessageContext ctx, JSONObject request, JSONObject response, String nonce) {
-            this.client = client;
-            this.ctx = ctx;
-            this.request = request;
-            this.response = response;
-            this.nonce = nonce;
-        }
-
-        /**
-         * Evaluates a continuation to completion
-         * @param continuation the continuation to evaluate
-         */
-        private void evaluateContinuation(ActionContinuation continuation) {
-            try {
-                ActionContinuation next = continuation.execute(this.client, this.ctx, this.request, this.response);
-                if (next != null) {
-                    Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> this.evaluateContinuation(next));
-                } else {
-                    this.ctx.send(this.response.toString());
-                }
-            } catch(Exception ex) {
-                this.ctx.send(toClientError(ex, this.nonce).toString());
-            }
-        }
-    }
-
-    private JSONObject toClientError(Exception ex, String nonce) {
+    public static JSONObject toClientError(Exception ex, String nonce) {
         JSONObject json = new JSONObject();
         json.put("ok", false);
         json.put("nonce", nonce);
