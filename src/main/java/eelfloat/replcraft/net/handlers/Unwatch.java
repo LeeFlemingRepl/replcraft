@@ -18,8 +18,8 @@ public class Unwatch implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.Regular;
+    public double cost(RequestContext ctx) {
+        return FuelCost.Regular.toDouble();
     }
 
     @Override

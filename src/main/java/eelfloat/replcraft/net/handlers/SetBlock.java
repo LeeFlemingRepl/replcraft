@@ -33,8 +33,12 @@ public class SetBlock implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.BlockChange;
+    public double cost(RequestContext ctx) {
+        double base = FuelCost.BlockChange.toDouble();
+        int chests = ctx.client.getStructure().chests.size();
+        int minChests = ReplCraft.plugin.fuel_cost_per_structure_inventory_start;
+        double perChest = ReplCraft.plugin.fuel_cost_per_structure_inventory;
+        return base + Math.max(chests - minChests, 0) * perChest;
     }
 
     @Override

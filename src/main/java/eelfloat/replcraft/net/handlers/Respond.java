@@ -1,7 +1,6 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.RequestContext;
 import org.json.JSONObject;
@@ -20,8 +19,8 @@ public class Respond implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.None;
+    public double cost(RequestContext ctx) {
+        return FuelCost.None.toDouble();
     }
 
     @Override

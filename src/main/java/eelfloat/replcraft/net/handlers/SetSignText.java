@@ -28,8 +28,8 @@ public class SetSignText implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.BlockChange;
+    public double cost(RequestContext ctx) {
+        return FuelCost.BlockChange.toDouble();
     }
 
     @Override

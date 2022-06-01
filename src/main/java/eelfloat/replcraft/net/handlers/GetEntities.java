@@ -1,6 +1,5 @@
 package eelfloat.replcraft.net.handlers;
 
-import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.RequestContext;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
@@ -26,8 +25,8 @@ public class GetEntities implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.Expensive;
+    public double cost(RequestContext ctx) {
+        return FuelCost.Expensive.toDouble();
     }
 
     @Override

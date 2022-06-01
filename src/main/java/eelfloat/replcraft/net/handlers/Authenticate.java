@@ -4,7 +4,6 @@ import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.exceptions.InvalidStructure;
 
 public class Authenticate implements WebsocketActionHandler {
     @Override
@@ -18,8 +17,8 @@ public class Authenticate implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.None;
+    public double cost(RequestContext ctx) {
+        return FuelCost.None.toDouble();
     }
 
     @Override

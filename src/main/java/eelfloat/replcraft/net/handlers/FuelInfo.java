@@ -2,8 +2,6 @@ package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.RateTracker;
 import eelfloat.replcraft.net.RequestContext;
@@ -25,8 +23,8 @@ public class FuelInfo implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.None;
+    public double cost(RequestContext ctx) {
+        return FuelCost.None.toDouble();
     }
 
     @Override
@@ -65,8 +63,8 @@ public class FuelInfo implements WebsocketActionHandler {
         JSONObject apis = new JSONObject();
         for (WebsocketActionHandler api: ReplCraft.plugin.websocketServer.apis.values()) {
             JSONObject apiJson = new JSONObject();
-            apiJson.put("baseFuelCost", api.cost().toDouble());
-            apiJson.put("fuelCost", api.cost().toDouble() * ctx.client.getStructure().material.fuelMultiplier);
+            apiJson.put("baseFuelCost", api.cost(ctx));
+            apiJson.put("fuelCost", api.cost(ctx) * ctx.client.getStructure().material.fuelMultiplier);
             apis.put(api.route(), apiJson);
         }
         ctx.response.put("apis", apis);

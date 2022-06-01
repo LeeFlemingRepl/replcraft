@@ -166,12 +166,12 @@ public class StructureUtil {
             throw new InvalidStructure("Structure must have a nonzero interior size.");
         }
 
-        if (structure.chests.size() > ReplCraft.plugin.structureInventoryLimit) {
+        if (structure.chests.size() > ReplCraft.plugin.structure_inventory_limit) {
             throw new InvalidStructure(String.format(
                 "Structure inventory cannot exceed %d chests. Chests inside the structure and not connected to the " +
                 "frame via %s blocks don't count against this limit, and you can use moveItem or setBlock's extended " +
                 "form to interact with them.",
-                ReplCraft.plugin.structureInventoryLimit,
+                ReplCraft.plugin.structure_inventory_limit,
                 material.name
             ));
         }

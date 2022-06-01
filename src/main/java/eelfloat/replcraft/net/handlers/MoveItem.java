@@ -23,8 +23,8 @@ public class MoveItem implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.Expensive;
+    public double cost(RequestContext ctx) {
+        return FuelCost.Expensive.toDouble();
     }
 
     @Override

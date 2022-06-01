@@ -1,6 +1,5 @@
 package eelfloat.replcraft.net.handlers;
 
-import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.RequestContext;
 
 import static eelfloat.replcraft.util.ApiUtil.getBlock;
@@ -18,8 +17,8 @@ public class GetSize implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.Regular;
+    public double cost(RequestContext ctx) {
+        return FuelCost.Regular.toDouble();
     }
 
     @Override

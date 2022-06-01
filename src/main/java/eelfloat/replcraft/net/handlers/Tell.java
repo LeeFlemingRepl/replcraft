@@ -2,7 +2,6 @@ package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.RequestContext;
 import org.bukkit.entity.Player;
 
@@ -20,8 +19,8 @@ public class Tell implements WebsocketActionHandler {
     }
 
     @Override
-    public FuelCost cost() {
-        return FuelCost.Expensive;
+    public double cost(RequestContext ctx) {
+        return FuelCost.Expensive.toDouble();
     }
 
     @Override

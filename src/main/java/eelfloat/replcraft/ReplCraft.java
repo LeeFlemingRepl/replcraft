@@ -59,11 +59,15 @@ public final class ReplCraft extends JavaPlugin {
     public double cost_per_block_change_api_call;
 
     /** The number of chests that a structure can have as its inventory */
-    public int structureInventoryLimit = 4;
+    public int structure_inventory_limit = 20;
+    /** The extra fuel cost per chest for API calls that interact with structure inventory */
+    public double fuel_cost_per_structure_inventory = 0.25;
+    /** The minimum number of chests before fuel_cost_per_structure_inventory takes effect */
+    public int fuel_cost_per_structure_inventory_start = 4;
 
     /** The fuel strategies, which provide fuel consumption. */
     public List<Function<Client, FuelStrategy>> strategies = new ArrayList<>();
-    /** The permission provider, which provides bukkit permissions for `eelfloat.replcraft.net.Client`s */
+    /** The permission provider, which provides bukkit permissions for Clients */
     public PermissionProvider permissionProvider;
     /** The cryptographic key used to sign auth tokens */
     public Key key = null;

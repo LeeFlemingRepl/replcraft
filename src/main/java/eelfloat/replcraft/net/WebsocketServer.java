@@ -109,17 +109,25 @@ public class WebsocketServer {
             String finalNonce = nonce;
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
-                    boolean freeFuel = false;
+                    boolean freeFuel = (
+                        client.getStructure() != null &&
+                        ReplCraft.plugin.world_guard &&
+                        ApiUtil.checkFlagOnStructure(
+                            client.getStructure(),
+                            ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
+                        )
+                    );
+
+                    RequestContext requestContext = new RequestContext(
+                        client, ctx, request, response, finalNonce, freeFuel
+                    );
+
                     if (client.getStructure() != null) {
-                        double fuelCost = handler.cost().toDouble() * client.getStructure().material.fuelMultiplier;
-                        freeFuel = (
-                            client.getStructure() != null &&
-                            ReplCraft.plugin.world_guard &&
-                            ApiUtil.checkFlagOnStructure(
-                                client.getStructure(),
-                                ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
-                            )
+                        double fuelCost = (
+                            handler.cost(requestContext) *
+                            client.getStructure().material.fuelMultiplier
                         );
+
                         if (!freeFuel && !client.useFuel(fuelCost)) {
                             String message = String.format(
                                 "out of fuel (cost: %s). available strategies: provide %s of %s.",
@@ -130,10 +138,6 @@ public class WebsocketServer {
 
                         client.tracker(handler).queue(fuelCost);
                     }
-
-                    RequestContext requestContext = new RequestContext(
-                        client, ctx, request, response, finalNonce, freeFuel
-                    );
                     evaluateContinuation(requestContext, handler);
                 } catch(Exception ex) {
                     ctx.send(toClientError(ex, finalNonce).toString());
