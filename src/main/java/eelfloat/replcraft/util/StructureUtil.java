@@ -17,7 +17,6 @@ import org.bukkit.block.data.type.WallSign;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class StructureUtil {
     /**
@@ -165,6 +164,16 @@ public class StructureUtil {
 
         if (structure.inner_size_x() < 1 || structure.inner_size_y() < 1 || structure.inner_size_z() < 1) {
             throw new InvalidStructure("Structure must have a nonzero interior size.");
+        }
+
+        if (structure.chests.size() > ReplCraft.plugin.structureInventoryLimit) {
+            throw new InvalidStructure(String.format(
+                "Structure inventory cannot exceed %d chests. Chests inside the structure and not connected to the " +
+                "frame via %s blocks don't count against this limit, and you can use moveItem or setBlock's extended " +
+                "form to interact with them.",
+                ReplCraft.plugin.structureInventoryLimit,
+                material.name
+            ));
         }
         return structure;
     }
