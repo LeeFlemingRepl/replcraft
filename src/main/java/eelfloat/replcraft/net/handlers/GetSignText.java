@@ -32,11 +32,12 @@ public class GetSignText implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         BlockState state = getBlock(client, request).getState();
         if (!(state instanceof Sign)) {
             throw new ApiError("invalid operation", "block is not a sign");
         }
         response.put("lines", ((Sign) state).getLines());
+        return null;
     }
 }

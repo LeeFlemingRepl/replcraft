@@ -11,7 +11,6 @@ import org.bukkit.inventory.ItemStack;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
 
 
 public class MoveItem implements WebsocketActionHandler {
@@ -36,7 +35,7 @@ public class MoveItem implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block source = ApiUtil.getBlock(client, request, "source_x", "source_y", "source_z");
         Block target = ApiUtil.getBlock(client, request, "target_x", "target_y", "target_z");
         ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, source.getLocation());
@@ -96,5 +95,6 @@ public class MoveItem implements WebsocketActionHandler {
             }
             throw new ApiError("invalid operation", "failed to move all items");
         }
+        return null;
     }
 }

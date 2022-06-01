@@ -30,7 +30,8 @@ public class GetPowerLevel implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         response.put("power", getBlock(client, request).getBlockPower());
+        return null;
     }
 }

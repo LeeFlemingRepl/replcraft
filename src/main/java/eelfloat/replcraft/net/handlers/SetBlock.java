@@ -45,7 +45,7 @@ public class SetBlock implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         try {
             String blockDataString = request.getString("blockData");
             ApiUtil.validateBlockData(blockDataString);
@@ -123,13 +123,14 @@ public class SetBlock implements WebsocketActionHandler {
 
             for (ItemStack drop: drops) {
                 ItemStack leftover = destination != null
-                        ? destination.addItem(drop).values().stream().findFirst().orElse(null)
-                        : client.getStructure().deposit(drop);
+                    ? destination.addItem(drop).values().stream().findFirst().orElse(null)
+                    : client.getStructure().deposit(drop);
                 if (leftover != null) target.getWorld().dropItemNaturally(location, leftover);
             }
         } catch (IllegalArgumentException ex) {
             ex.printStackTrace();
             throw new ApiError("bad request", ex.toString());
         }
+        return null;
     }
 }

@@ -181,16 +181,26 @@ public class Structure {
     }
 
     /**
+     * Attempts to deposit an ItemStack into a specific attached inventory index
+     * @param stack the stack to deposit
+     * @param index the index to attempt deposition into
+     * @return any leftover portion of the stack which didn't fit, null if completely inserted.
+     */
+    public ItemStack deposit(ItemStack stack, int index) {
+        BlockState state = this.chests.get(index).getState();
+        if (!(state instanceof Chest)) return stack;
+        return ((Chest) state).getInventory().addItem(stack).values().stream().findFirst().orElse(null);
+    }
+
+    /**
      * Attempts to deposit an ItemStack into any attached inventory
      * @param stack the stack to deposit
      * @return any leftover portion of the stack which didn't fit anywhere, null if completely inserted.
      */
     public ItemStack deposit(ItemStack stack) {
-        // todo: potential optimization target (accept multiple stacks, cache locations, etc.)
-        for (Block block: this.chests) {
-            BlockState state = block.getState();
-            if (!(state instanceof Chest)) continue;
-            stack = ((Chest) state).getInventory().addItem(stack).values().stream().findFirst().orElse(null);
+        List<Block> blocks = this.chests;
+        for (int i = 0; i < blocks.size(); i++) {
+            stack = this.deposit(stack, i);
             if (stack == null) return null;
         }
         return stack;

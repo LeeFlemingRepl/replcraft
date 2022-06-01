@@ -62,7 +62,7 @@ public class Craft implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         JSONArray ingredients = request.getJSONArray("ingredients");
         Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(client, request), "output container");
         ApiUtil.checkProtectionPlugins(client.getStructure().minecraft_uuid, output.getLocation());
@@ -95,7 +95,7 @@ public class Craft implements WebsocketActionHandler {
         while (iter.hasNext()) {
             Recipe next = iter.next();
             // Try the recipe
-            if (tryRecipe(client, next, items, output)) return;
+            if (tryRecipe(client, next, items, output)) return null;
             // Reset items since this recipe failed
             for (CraftingHelper item: items)
                 if (item != null) item.timesUsed = 0;

@@ -30,7 +30,8 @@ public class Unwatch implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         client.unwatch(getBlock(client, request));
+        return null;
     }
 }

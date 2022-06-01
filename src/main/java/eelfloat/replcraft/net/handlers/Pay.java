@@ -7,11 +7,8 @@ import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.util.ApiUtil;
 import io.javalin.websocket.WsMessageContext;
 import net.milkbowl.vault.economy.EconomyResponse;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.json.JSONObject;
-
-import java.util.UUID;
 
 public class Pay implements WebsocketActionHandler {
     @Override
@@ -35,7 +32,7 @@ public class Pay implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         if (ReplCraft.plugin.economy == null) {
             throw new ApiError("bad request", "This command requires Vault to be installed on the server.");
         }
@@ -50,5 +47,6 @@ public class Pay implements WebsocketActionHandler {
             throw new ApiError("invalid operation", "transaction failed: " + econResponse.errorMessage);
         }
         ReplCraft.plugin.economy.depositPlayer(target, world, amount);
+        return null;
     }
 }

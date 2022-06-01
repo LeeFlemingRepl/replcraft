@@ -6,7 +6,6 @@ import eelfloat.replcraft.net.Client;
 import io.javalin.websocket.WsMessageContext;
 import org.json.JSONObject;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 public class Respond implements WebsocketActionHandler {
@@ -31,10 +30,11 @@ public class Respond implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         BiFunction<Client.QueryStatus, JSONObject, ApiError> cb = client.queryCallbacks.remove(request.getLong("queryNonce"));
         if (cb == null) throw new ApiError("invalid operation", "No such callback. It may have expired.");
         ApiError error = cb.apply(Client.QueryStatus.Success, request);
         if (error != null) throw error;
+        return null;
     }
 }

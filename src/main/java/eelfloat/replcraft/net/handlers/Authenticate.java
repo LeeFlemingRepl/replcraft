@@ -30,11 +30,12 @@ public class Authenticate implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         client.setStructure(
             StructureUtil.verifyToken(request.getString("token")),
             request.getString("token")
         );
         ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " authenticated: " + client.getStructure());
+        return null;
     }
 }

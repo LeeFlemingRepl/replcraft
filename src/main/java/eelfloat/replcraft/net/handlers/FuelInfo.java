@@ -8,7 +8,6 @@ import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.RateTracker;
 import eelfloat.replcraft.strategies.FuelStrategy;
 import io.javalin.websocket.WsMessageContext;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,7 +35,7 @@ public class FuelInfo implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client currentClient, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(Client currentClient, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         JSONArray connections = new JSONArray();
         for (Client client: ReplCraft.plugin.websocketServer.clients.values()) {
             Structure current = currentClient.getStructure();
@@ -80,5 +79,6 @@ public class FuelInfo implements WebsocketActionHandler {
             strategies.put(strategyJson);
         }
         response.put("strategies", strategies);
+        return null;
     }
 }

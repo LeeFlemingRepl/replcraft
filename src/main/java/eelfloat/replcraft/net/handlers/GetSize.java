@@ -30,9 +30,10 @@ public class GetSize implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         response.put("x", client.getStructure().inner_size_x());
         response.put("y", client.getStructure().inner_size_y());
         response.put("z", client.getStructure().inner_size_z());
+        return null;
     }
 }

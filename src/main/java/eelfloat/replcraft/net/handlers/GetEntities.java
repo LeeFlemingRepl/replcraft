@@ -37,7 +37,7 @@ public class GetEntities implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block zero = client.getStructure().getBlock(0, 0, 0);
         Block max = client.getStructure().getBlock(
                 client.getStructure().inner_size_x()-1,
@@ -64,5 +64,6 @@ public class GetEntities implements WebsocketActionHandler {
             entities.put(entity_json);
         }
         response.put("entities", entities);
+        return null;
     }
 }

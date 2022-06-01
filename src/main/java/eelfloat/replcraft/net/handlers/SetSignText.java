@@ -40,7 +40,7 @@ public class SetSignText implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         Block block = getBlock(client, request);
         BlockState state = block.getState();
         if (!(state instanceof Sign)) {
@@ -80,5 +80,6 @@ public class SetSignText implements WebsocketActionHandler {
             ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", block.getLocation(), block.getBlockData().getMaterial(), block.getBlockData());
         }
         state.update();
+        return null;
     }
 }

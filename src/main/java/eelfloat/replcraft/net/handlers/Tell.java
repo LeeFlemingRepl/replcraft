@@ -32,7 +32,7 @@ public class Tell implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws InvalidStructure, ApiError {
         String target = request.getString("target");
 
         Player player = ReplCraft.plugin.getServer().getPlayerExact(target);
@@ -62,5 +62,6 @@ public class Tell implements WebsocketActionHandler {
             client.getStructure().getPlayer().getName(),
             message
         ));
+        return null;
     }
 }

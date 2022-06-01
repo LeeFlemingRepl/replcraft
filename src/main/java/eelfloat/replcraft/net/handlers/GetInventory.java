@@ -1,17 +1,14 @@
 package eelfloat.replcraft.net.handlers;
 
-import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.Client;
 import io.javalin.websocket.WsMessageContext;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.material.MaterialData;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,7 +39,7 @@ public class GetInventory implements WebsocketActionHandler {
     }
 
     @Override
-    public void execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
+    public ActionContinuation execute(Client client, WsMessageContext ctx, JSONObject request, JSONObject response) throws ApiError {
         JSONArray items = new JSONArray();
         BlockState state = getBlock(client, request).getState();
         if (!(state instanceof Container)) {
@@ -85,5 +82,6 @@ public class GetInventory implements WebsocketActionHandler {
             items.put(jsonitem);
         }
         response.put("items", items);
+        return null;
     }
 }

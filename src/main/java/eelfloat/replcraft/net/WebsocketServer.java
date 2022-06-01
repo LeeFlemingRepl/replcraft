@@ -2,7 +2,6 @@ package eelfloat.replcraft.net;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.exceptions.InvalidStructure;
 import eelfloat.replcraft.net.handlers.*;
 import eelfloat.replcraft.util.ApiUtil;
 import io.javalin.Javalin;
@@ -131,8 +130,8 @@ public class WebsocketServer {
                         client.tracker(handler).queue(fuelCost);
                     }
 
-                    handler.execute(client, ctx, request, response);
-                    ctx.send(response.toString());
+                    RequestContext requestContext = new RequestContext(client, ctx, request, response, finalNonce);
+                    requestContext.evaluateContinuation(handler);
                 } catch(Exception ex) {
                     ctx.send(toClientError(ex, finalNonce).toString());
                 }
@@ -142,15 +141,48 @@ public class WebsocketServer {
         }
     }
 
+    /**
+     * A context for a client request, scoped to run only on the main thread.
+     */
+    class RequestContext {
+        final Client client;
+        final WsMessageContext ctx;
+        final JSONObject request;
+        final JSONObject response;
+        final String nonce;
+
+        RequestContext(Client client, WsMessageContext ctx, JSONObject request, JSONObject response, String nonce) {
+            this.client = client;
+            this.ctx = ctx;
+            this.request = request;
+            this.response = response;
+            this.nonce = nonce;
+        }
+
+        /**
+         * Evaluates a continuation to completion
+         * @param continuation the continuation to evaluate
+         */
+        private void evaluateContinuation(ActionContinuation continuation) {
+            try {
+                ActionContinuation next = continuation.execute(this.client, this.ctx, this.request, this.response);
+                if (next != null) {
+                    Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> this.evaluateContinuation(next));
+                } else {
+                    this.ctx.send(this.response.toString());
+                }
+            } catch(Exception ex) {
+                this.ctx.send(toClientError(ex, this.nonce).toString());
+            }
+        }
+    }
+
     private JSONObject toClientError(Exception ex, String nonce) {
         JSONObject json = new JSONObject();
         json.put("ok", false);
         json.put("nonce", nonce);
         if (ex instanceof JSONException) {
             json.put("error", "bad request");
-            json.put("message", ex.getMessage());
-        } else if (ex instanceof InvalidStructure) {
-            json.put("error", "invalid structure");
             json.put("message", ex.getMessage());
         } else if (ex instanceof ApiError) {
             json.put("error", ((ApiError) ex).type);
