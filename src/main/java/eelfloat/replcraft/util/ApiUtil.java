@@ -146,6 +146,9 @@ public class ApiUtil {
             case COCOA:        return Material.COCOA_BEANS;
             case CARROTS:      return Material.CARROT;
             case POTATOES:     return Material.POTATO;
+            case REDSTONE_WALL_TORCH: return Material.REDSTONE_TORCH;
+            case LAVA: return Material.LAVA_BUCKET;
+            case WATER: return Material.WATER_BUCKET;
             default:           return material;
         }
     }

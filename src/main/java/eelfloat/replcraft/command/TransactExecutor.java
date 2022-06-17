@@ -1,6 +1,7 @@
 package eelfloat.replcraft.command;
 
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.net.Client;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Location;
@@ -26,7 +27,11 @@ public class TransactExecutor implements CommandExecutor {
         Location location = ((Player) sender).getLocation();
         List<Client> clients = ReplCraft.plugin.websocketServer.clients.values()
             .parallelStream()
-            .filter(client -> client.getStructure().contains(location))
+            .filter(client -> {
+                Structure structure = client.getStructure();
+                if (structure == null) return false;
+                return structure.contains(location);
+            })
             .limit(2)
             .collect(Collectors.toList());
 
