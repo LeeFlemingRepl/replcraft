@@ -162,6 +162,8 @@ public class StructureContext {
 
     /** Forces the client to re-verify its structure if the given location is adjacent to any of its structural blocks */
     public void notifyChangeAndRevalidateStructureAt(Location location) {
+        if (this.authentication == null) return;
+
         HashSet<Location> locations = this.structure == null
             ? this.invalidated_structure_locations
             : this.structure.frameBlocks;

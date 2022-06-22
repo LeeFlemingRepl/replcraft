@@ -2,6 +2,7 @@ package eelfloat.replcraft;
 
 import eelfloat.replcraft.command.CreateTokenExecutor;
 import eelfloat.replcraft.command.RecipeExecutor;
+import eelfloat.replcraft.command.ReplizeToolExecutor;
 import eelfloat.replcraft.command.TransactExecutor;
 import eelfloat.replcraft.listeners.StructureInteractions;
 import eelfloat.replcraft.listeners.StructureUpdates;
@@ -219,6 +220,7 @@ public final class ReplCraft extends JavaPlugin {
         this.getCommand("transact").setExecutor(new TransactExecutor());
         this.getCommand("recipe").setExecutor(new RecipeExecutor());
         this.getCommand("token").setExecutor(new CreateTokenExecutor());
+        this.getCommand("replize").setExecutor(new ReplizeToolExecutor());
         //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(wss -> wss.getContexts().forEach(StructureContext::pollOne));

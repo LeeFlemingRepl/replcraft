@@ -5,8 +5,7 @@ import eelfloat.replcraft.net.handlers.WebsocketActionHandler;
 import io.javalin.websocket.WsContext;
 import org.json.JSONObject;
 
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * V2 clients can connect to multiple structures at a time by specifying the context along with requests.
@@ -14,15 +13,15 @@ import java.util.HashMap;
  */
 public class ClientV2 extends Client {
     private final HashMap<Long, StructureContext> contexts = new HashMap<>();
+    public final ArrayList<ItemContext> items = new ArrayList<>();
+    private long idcounter = 0;
+
+    public static final String CONTEXT_CAUSE_LOGIN = "login";
 
     public ClientV2(WsContext ctx, WebsocketServer websocketServer) {
         super(ctx, websocketServer);
     }
 
-
-    public static final String CONTEXT_CAUSE_LOGIN = "login";
-
-    private long idcounter = 0;
     public StructureContext createContext(Structure structure, String authenticationToken, String cause) {
         long id = this.idcounter++;
 

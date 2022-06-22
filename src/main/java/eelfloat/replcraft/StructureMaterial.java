@@ -2,7 +2,8 @@ package eelfloat.replcraft;
 
 import org.bukkit.Material;
 
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class StructureMaterial {
     public final String name;
@@ -10,6 +11,14 @@ public class StructureMaterial {
     public final double fuelMultiplier;
     public final Set<Material> validMaterials;
     public final Set<String> apis;
+
+    public static final StructureMaterial META_MATERIAL = new StructureMaterial(
+        "abstract",
+        0,
+        1.0,
+        new HashSet<>(),
+        new HashSet<>(ReplCraft.plugin.websocketServer.apis.keySet())
+    );
 
     public StructureMaterial(String name, int max_size, double fuelMultiplier, Set<Material> validMaterials, Set<String> apis) {
         this.name = name;

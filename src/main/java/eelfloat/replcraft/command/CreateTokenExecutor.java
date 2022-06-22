@@ -22,6 +22,7 @@ public class CreateTokenExecutor implements CommandExecutor {
         claims.put("host", ReplCraft.plugin.public_address);
         claims.put("uuid", ((Player) sender).getUniqueId().toString());
         claims.put("username", sender.getName());
+        claims.put("scope", "user");
 
         String jws = Jwts.builder().setClaims(claims).signWith(ReplCraft.plugin.key).compact();
         sender.sendMessage("Your token (click to copy): " + jws);

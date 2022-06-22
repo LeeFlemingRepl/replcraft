@@ -9,20 +9,25 @@ commands:
   transact:
     description: Transacts with a structure, sending it some money and a command. The structure can then do whatever it wants in response.
     usage: /transact <amount> [extra text sent to replcraft script]
-    permission: replcraft.transact
+    permission: replcraft.command.transact
   recipe:
     description: Lists detailed information for a recipe
     usage: /recipe <result>
-    permission: replcraft.recipe
+    permission: replcraft.command.recipe
   token:
     description: Obtains your replcraft token
     usage: /token
-    permission: replcraft.token
+    permission: replcraft.command.token
+  replize:
+    description: Acquires a token for the tool you're currently holding
+    usage: /replize
+    permission: replcraft.command.replize
 
 permissions:
-  replcraft.transact: { default: true, description: "Allows use of the /transact command" }
-  replcraft.recipe: { default: true, description: "Allows use of the /recipe command" }
-  replcraft.token: { default: true, description: "Allows use of the /token command" }
+  replcraft.command.transact: { default: true, description: "Allows use of the /transact command" }
+  replcraft.command.recipe: { default: true, description: "Allows use of the /recipe command" }
+  replcraft.command.token: { default: true, description: "Allows use of the /token command" }
+  replrcaft.command.replize: { default: true, description: "Allows use of the /replize command" }
   replcraft.auth.self: { default: true, description: "Allows obtaining tokens from signs with a matching username"}
   replcraft.auth.admin: { default: op, description: "Allows obtaining tokens from ANY sign, including those with the name '@ADMIN'"}
   replcraft.auth.public: { default: true, description: "Allows obtaining tokens from signs with the name '@PUBLIC'"}

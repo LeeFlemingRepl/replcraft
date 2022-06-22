@@ -2,14 +2,16 @@ package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.net.ClientV1;
-import eelfloat.replcraft.net.ClientV2;
-import eelfloat.replcraft.net.RequestContext;
-import eelfloat.replcraft.net.StructureContext;
+import eelfloat.replcraft.net.*;
 import eelfloat.replcraft.util.StructureUtil;
 import eelfloat.replcraft.exceptions.ApiError;
 import io.jsonwebtoken.Claims;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,6 +42,7 @@ public class Authenticate implements WebsocketActionHandler {
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         AtomicReference<ApiError> error = new AtomicReference<>(null);
         AtomicReference<StructureContext> success = new AtomicReference<>(null);
+        AtomicBoolean otherSuccess = new AtomicBoolean(false);
 
         String token = ctx.request.getString("token");
         if (ctx.client instanceof ClientV1) {
@@ -57,13 +60,13 @@ public class Authenticate implements WebsocketActionHandler {
                 ));
             });
         } else if (ctx.client instanceof ClientV2) {
+            ClientV2 client = (ClientV2) ctx.client;
             Claims claims = StructureUtil.parseToken(token);
             String scope = claims.get("scope", String.class);
             ReplCraft.plugin.logger.info("Performing async V2 authentication for scope " + scope + "...");
             switch (scope) {
                 case "structure":
                     StructureUtil.verifyTokenAsync(token, structure -> {
-                        ClientV2 client = (ClientV2) ctx.client;
                         StructureContext structureContext = client.createContext(structure, token, CONTEXT_CAUSE_LOGIN);
                         ctx.response.put("context", structureContext.id);
                         success.set(structureContext);
@@ -77,13 +80,26 @@ public class Authenticate implements WebsocketActionHandler {
                     });
                     break;
 
-                default: throw new ApiError(ApiError.AUTHENTICATION_FAILED, "invalid token: unknown claim type");
+                case "item":
+                    client.items.add(new ItemContext(client, claims));
+                    otherSuccess.set(true);
+                    break;
+
+                default: throw new ApiError(ApiError.AUTHENTICATION_FAILED, "invalid token: unknown scope \"" + scope + "\"");
             }
         }
 
         return new ActionContinuation() {
             @Override
             public ActionContinuation execute(RequestContext ctx) throws ApiError {
+                if (otherSuccess.get()) {
+                    ReplCraft.plugin.logger.info(String.format(
+                        "Client %s authenticated with a non-structure context",
+                        ctx.wsContext.session.getRemoteAddress()
+                    ));
+                    return null;
+                }
+
                 StructureContext structureContext = success.get();
                 if (structureContext != null) {
                     ReplCraft.plugin.logger.info(String.format(
