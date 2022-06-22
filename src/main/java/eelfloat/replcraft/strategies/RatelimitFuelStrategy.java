@@ -1,6 +1,6 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 
 public class RatelimitFuelStrategy extends FuelStrategy {
     private long last_check = System.currentTimeMillis();
@@ -23,7 +23,7 @@ public class RatelimitFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public double generate(double fuel_cost, Client client) {
+    public double generate(double fuel_cost, StructureContext structureContext) {
         long now = System.currentTimeMillis();
         double generated = fuel_per_sec * (now - last_check) / 1000.0;
         double space_left = (max_fuel - spareFuel) + fuel_cost;

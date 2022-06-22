@@ -2,7 +2,7 @@ package eelfloat.replcraft.command;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -25,21 +25,22 @@ public class TransactExecutor implements CommandExecutor {
         }
 
         Location location = ((Player) sender).getLocation();
-        List<Client> clients = ReplCraft.plugin.websocketServer.clients.values()
+        List<StructureContext> structureContexts = ReplCraft.plugin.websocketServer.clients.values()
             .parallelStream()
-            .filter(client -> {
-                Structure structure = client.getStructure();
+            .flatMap(client -> client.getContexts().stream())
+            .filter(ctx -> {
+                Structure structure = ctx.getStructure();
                 if (structure == null) return false;
                 return structure.contains(location);
             })
             .limit(2)
             .collect(Collectors.toList());
 
-        if (clients.size() == 0) {
+        if (structureContexts.size() == 0) {
             sender.sendMessage("You must use this command inside an active structure.");
             return true;
         }
-        if (clients.size() == 2) {
+        if (structureContexts.size() == 2) {
             sender.sendMessage("This command must be used inside exactly one active structure. Overlapping structures are not allowed.");
             return true;
         }
@@ -58,7 +59,7 @@ public class TransactExecutor implements CommandExecutor {
         }
         String trim = string.toString().trim();
 
-        Client client = clients.get(0);
+        StructureContext structureContext = structureContexts.get(0);
         if (ReplCraft.plugin.economy == null) {
             sender.sendMessage("This command requires Vault to be installed.");
             return true;
@@ -79,19 +80,19 @@ public class TransactExecutor implements CommandExecutor {
         query.put("query", trim);
         query.put("amount", amount);
         sender.sendMessage("Transaction opened...");
-        client.sendQuery(query, (status, response) -> {
+        structureContext.sendQuery(query, (status, response) -> {
             switch(status) {
                 case Success:
                     if (response.getBoolean("accept")) {
                         sender.sendMessage(String.format(
                             "Transaction accepted by %s's script!",
-                            client.getStructure().getPlayer().getName()
+                            structureContext.getStructure().getPlayer().getName()
                         ));
-                        ReplCraft.plugin.economy.depositPlayer(client.getStructure().getPlayer(), amount);
+                        ReplCraft.plugin.economy.depositPlayer(structureContext.getStructure().getPlayer(), amount);
                     } else {
                         sender.sendMessage(String.format(
                             "Transaction was denied by %s's script. You have been refunded.",
-                            client.getStructure().getPlayer().getName()
+                            structureContext.getStructure().getPlayer().getName()
                         ));
                         ReplCraft.plugin.economy.depositPlayer(offp, world, amount);
                     }

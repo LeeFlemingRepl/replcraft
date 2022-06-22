@@ -1,7 +1,6 @@
 package eelfloat.replcraft.permissions;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

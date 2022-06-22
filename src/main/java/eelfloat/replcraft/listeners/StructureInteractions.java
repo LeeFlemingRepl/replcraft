@@ -119,6 +119,7 @@ public class StructureInteractions implements Listener {
 
             claims.put("host", ReplCraft.plugin.public_address);
             claims.put("world", block.getWorld().getName());
+            claims.put("scope", "structure");
             claims.put("x", block.getX());
             claims.put("y", block.getY());
             claims.put("z", block.getZ());

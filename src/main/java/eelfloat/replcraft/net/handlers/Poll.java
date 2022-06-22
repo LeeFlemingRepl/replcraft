@@ -29,7 +29,7 @@ public class Poll implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        ctx.client.poll(getBlock(ctx.client, ctx.request));
+        ctx.structureContext.poll(getBlock(ctx.structureContext, ctx.request));
         return null;
     }
 }

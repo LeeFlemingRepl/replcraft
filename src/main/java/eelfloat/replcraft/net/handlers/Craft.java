@@ -4,7 +4,8 @@ import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -17,7 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-    
+
 public class Craft implements WebsocketActionHandler {
     @Override
     public String route() {
@@ -38,7 +39,6 @@ public class Craft implements WebsocketActionHandler {
     public boolean authenticated() {
         return true;
     }
-
 
     private static class CraftingHelper {
         final ItemStack item;
@@ -64,8 +64,8 @@ public class Craft implements WebsocketActionHandler {
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         JSONArray ingredients = ctx.request.getJSONArray("ingredients");
-        Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(ctx.client, ctx.request), "output container");
-        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, output.getLocation());
+        Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request), "output container");
+        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, output.getLocation());
 
         // A list of crafting helpers. Crafting helpers pointing at the same location are duplicated
         // in the list. Some slots are null to account for spaces.
@@ -77,11 +77,11 @@ public class Craft implements WebsocketActionHandler {
             }
 
             JSONObject reference = ingredients.getJSONObject(i);
-            Block block = ApiUtil.getBlock(ctx.client, reference);
+            Block block = ApiUtil.getBlock(ctx.structureContext, reference);
             int index = reference.getInt("index");
             ItemStack item = ApiUtil.getItem(block, String.format("ingredient %d block", i), index);
             Location location = block.getLocation();
-            ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, location);
+            ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, location);
             CraftingHelper new_or_existing = items.stream()
                     .filter(helper -> helper != null && helper.location.equals(location) && helper.index == index)
                     .findFirst()
@@ -95,16 +95,16 @@ public class Craft implements WebsocketActionHandler {
         while (iter.hasNext()) {
             Recipe next = iter.next();
             // Try the recipe
-            if (tryRecipe(ctx.client, next, items, output)) return null;
+            if (tryRecipe(ctx.structureContext, next, items, output)) return null;
             // Reset items since this recipe failed
             for (CraftingHelper item: items)
                 if (item != null) item.timesUsed = 0;
         }
 
-        throw new ApiError("invalid operation", "no matching recipe");
+        throw new ApiError(ApiError.INVALID_OPERATION, "no matching recipe");
     }
 
-    private boolean tryRecipe(Client client, Recipe recipe, ArrayList<CraftingHelper> items, Inventory output) throws ApiError {
+    private boolean tryRecipe(StructureContext structureContext, Recipe recipe, ArrayList<CraftingHelper> items, Inventory output) throws ApiError {
         if (recipe instanceof ShapedRecipe) {
             Map<Character, ItemStack> ingredientMap = ((ShapedRecipe) recipe).getIngredientMap();
             String[] rows = ((ShapedRecipe) recipe).getShape();
@@ -154,7 +154,7 @@ public class Craft implements WebsocketActionHandler {
         for (CraftingHelper ingredient: items) {
             if (ingredient == null) continue;
             if (ingredient.timesUsed > ingredient.item.getAmount()) {
-                throw new ApiError("invalid operation", String.format(
+                throw new ApiError(ApiError.INVALID_OPERATION, String.format(
                     "attempted to use more %s than available",
                     ingredient.item.getType()
                 ));
@@ -164,10 +164,10 @@ public class Craft implements WebsocketActionHandler {
         // Ensure there's somewhere to put the resulting item
         ReplCraft.plugin.logger.info("Checking space");
         if (!output.addItem(recipe.getResult()).isEmpty()) {
-            throw new ApiError("invalid operation", "no space to store result");
+            throw new ApiError(ApiError.INVALID_OPERATION, "no space to store result");
         }
         if (ReplCraft.plugin.core_protect) {
-            String player = client.getStructure().getPlayer().getName();
+            String player = structureContext.getStructure().getPlayer().getName();
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", output.getLocation());
         }
 
@@ -177,7 +177,7 @@ public class Craft implements WebsocketActionHandler {
             ingredient.item.setAmount(ingredient.item.getAmount() - ingredient.timesUsed);
             ingredient.timesUsed = 0; // Prevent anyone else from using it more
             if (ReplCraft.plugin.core_protect) {
-                String player = client.getStructure().getPlayer().getName();
+                String player = structureContext.getStructure().getPlayer().getName();
                 ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", ingredient.location);
             }
         }

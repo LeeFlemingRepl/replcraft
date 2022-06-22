@@ -31,17 +31,17 @@ public class Pay implements WebsocketActionHandler {
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         if (ReplCraft.plugin.economy == null) {
-            throw new ApiError("bad request", "This command requires Vault to be installed on the server.");
+            throw new ApiError(ApiError.BAD_REQUEST, "This command requires Vault to be installed on the server.");
         }
 
-        String world = ctx.client.getStructure().sign.getWorld().getName();
-        OfflinePlayer sender = ctx.client.getStructure().getPlayer();
-        OfflinePlayer target = ApiUtil.getTargetPlayer(ctx.client, ctx.request);
+        String world = ctx.structureContext.getStructure().sign.getWorld().getName();
+        OfflinePlayer sender = ctx.structureContext.getStructure().getPlayer();
+        OfflinePlayer target = ApiUtil.getTargetPlayer(ctx.structureContext, ctx.request);
         double amount = ctx.request.getDouble("amount");
 
         EconomyResponse econResponse = ReplCraft.plugin.economy.withdrawPlayer(sender, world, amount);
         if (!econResponse.transactionSuccess()) {
-            throw new ApiError("invalid operation", "transaction failed: " + econResponse.errorMessage);
+            throw new ApiError(ApiError.INVALID_OPERATION, "transaction failed: " + econResponse.errorMessage);
         }
         ReplCraft.plugin.economy.depositPlayer(target, world, amount);
         return null;

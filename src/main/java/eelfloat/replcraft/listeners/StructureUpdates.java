@@ -2,10 +2,10 @@ package eelfloat.replcraft.listeners;
 
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -22,8 +22,10 @@ public class StructureUpdates implements Listener {
     private void notifyBlockChange(String cause, BlockData oldBlockData, Location location, boolean reverify) {
         ReplCraft.plugin.getServer().getScheduler().runTask(ReplCraft.plugin, () -> {
             for (Client client: ReplCraft.plugin.websocketServer.clients.values()) {
-                client.notifyBlockChange(location, cause, oldBlockData, location.getBlock().getBlockData());
-                if (reverify) client.notifyChangeAndRevalidateStructureAt(location);
+                for (StructureContext ctx: client.getContexts()) {
+                    ctx.notifyBlockChange(location, cause, oldBlockData, location.getBlock().getBlockData());
+                    if (reverify) ctx.notifyChangeAndRevalidateStructureAt(location);
+                }
             }
         });
     }

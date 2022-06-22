@@ -29,7 +29,7 @@ public class Watch implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        ctx.client.watch(getBlock(ctx.client, ctx.request));
+        ctx.structureContext.watch(getBlock(ctx.structureContext, ctx.request));
         return null;
     }
 }

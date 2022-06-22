@@ -29,7 +29,7 @@ public class Unpoll implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        ctx.client.unpoll(getBlock(ctx.client, ctx.request));
+        ctx.structureContext.unpoll(getBlock(ctx.structureContext, ctx.request));
         return null;
     }
 }

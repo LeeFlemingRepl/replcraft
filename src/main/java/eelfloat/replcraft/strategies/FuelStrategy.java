@@ -1,6 +1,6 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 
 public abstract class FuelStrategy {
     /** The amount of fuel consumed during the last consume operation */
@@ -16,10 +16,10 @@ public abstract class FuelStrategy {
      * Attempts to consume fuel from the strategy.
      *
      * @param fuel_cost the amount of fuel to consume
-     * @param client
+     * @param structureContext
      * @return how much fuel was consumed
      */
-    public final double consume(double fuel_cost, Client client) {
+    public final double consume(double fuel_cost, StructureContext structureContext) {
         this.lastConsumption = 0;
 
         while (true) {
@@ -29,7 +29,7 @@ public abstract class FuelStrategy {
             lastConsumption += spare_fuel_used;
             if (fuel_cost == 0) break;
 
-            double generated = this.generate(fuel_cost, client);
+            double generated = this.generate(fuel_cost, structureContext);
             if (generated == 0) break;
             this.spareFuel += generated;
         }
@@ -42,13 +42,14 @@ public abstract class FuelStrategy {
      * Attempts to consume fuel from the strategy by generating it immediately
      *
      * @param fuel_cost how much fuel needs to be generated
-     * @param client
+     * @param structureContext
      * @return how much fuel was generated
      */
-    abstract double generate(double fuel_cost, Client client);
+    abstract double generate(double fuel_cost, StructureContext structureContext);
 
     /**
-     * Determines if a fuel strategy is excluded from client errors
+     * Determines if a fuel strategy is excluded from client error. Hidden strategies also don't prevent fuel from being
+     * free, so if the only available strategies are hidden, fuel will be skipped entirely.
      * @return if the fuel strategy is hidden
      */
     public boolean isHidden() {

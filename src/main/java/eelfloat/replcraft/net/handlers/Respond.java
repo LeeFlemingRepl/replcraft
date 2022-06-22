@@ -1,7 +1,7 @@
 package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import eelfloat.replcraft.net.RequestContext;
 import org.json.JSONObject;
 
@@ -30,9 +30,9 @@ public class Respond implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        BiFunction<Client.QueryStatus, JSONObject, ApiError> cb = ctx.client.queryCallbacks.remove(ctx.request.getLong("queryNonce"));
-        if (cb == null) throw new ApiError("invalid operation", "No such callback. It may have expired.");
-        ApiError error = cb.apply(Client.QueryStatus.Success, ctx.request);
+        BiFunction<StructureContext.QueryStatus, JSONObject, ApiError> cb = ctx.structureContext.queryCallbacks.remove(ctx.request.getLong("queryNonce"));
+        if (cb == null) throw new ApiError(ApiError.INVALID_OPERATION, "No such callback. It may have expired.");
+        ApiError error = cb.apply(StructureContext.QueryStatus.Success, ctx.request);
         if (error != null) throw error;
         return null;
     }

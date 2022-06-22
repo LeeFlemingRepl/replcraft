@@ -1,10 +1,11 @@
 package eelfloat.replcraft;
 
+import eelfloat.replcraft.command.CreateTokenExecutor;
 import eelfloat.replcraft.command.RecipeExecutor;
 import eelfloat.replcraft.command.TransactExecutor;
 import eelfloat.replcraft.listeners.StructureInteractions;
 import eelfloat.replcraft.listeners.StructureUpdates;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import eelfloat.replcraft.net.WebsocketServer;
 import eelfloat.replcraft.permissions.DefaultPermissionProvider;
 import eelfloat.replcraft.permissions.PermissionProvider;
@@ -66,7 +67,7 @@ public final class ReplCraft extends JavaPlugin {
     public int fuel_cost_per_structure_inventory_start = 4;
 
     /** The fuel strategies, which provide fuel consumption. */
-    public List<Function<Client, FuelStrategy>> strategies = new ArrayList<>();
+    public List<Function<StructureContext, FuelStrategy>> strategies = new ArrayList<>();
     /** The permission provider, which provides bukkit permissions for Clients */
     public PermissionProvider permissionProvider;
     /** The cryptographic key used to sign auth tokens */
@@ -217,16 +218,19 @@ public final class ReplCraft extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new StructureUpdates(), this);
         this.getCommand("transact").setExecutor(new TransactExecutor());
         this.getCommand("recipe").setExecutor(new RecipeExecutor());
+        this.getCommand("token").setExecutor(new CreateTokenExecutor());
         //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
-            websocketServer.clients.values().forEach(Client::pollOne);
+            websocketServer.clients.values().forEach(wss -> wss.getContexts().forEach(StructureContext::pollOne));
         }, 0, 1);
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(client -> {
-                if (client.getStructure() == null) return;
-                leftOverFuel.resetExpiration(client.getStructure());
-                ratelimiters.resetExpiration(client.getStructure().minecraft_uuid);
-                client.expireQueries();
+                client.getContexts().forEach(context -> {
+                    if (context.getStructure() == null) return;
+                    leftOverFuel.resetExpiration(context.getStructure());
+                    ratelimiters.resetExpiration(context.getStructure().minecraft_uuid);
+                    context.expireQueries();
+                });
             });
             leftOverFuel.expire();
             ratelimiters.expire();

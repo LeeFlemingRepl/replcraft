@@ -1,7 +1,7 @@
 package eelfloat.replcraft.strategies;
 
 import eelfloat.replcraft.ReplCraft;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
 
 /**
@@ -9,9 +9,9 @@ import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
  */
 public class LeftoverFuelStrategy extends FuelStrategy {
     @Override
-    double generate(double fuel_cost, Client client) {
+    double generate(double fuel_cost, StructureContext structureContext) {
         BoxedDoubleButActuallyUseful tracker = ReplCraft.plugin.leftOverFuel.get(
-            client.getStructure(),
+            structureContext.getStructure(),
             () -> new BoxedDoubleButActuallyUseful(0.0)
         );
         double amount = Math.min(tracker.value, fuel_cost);

@@ -14,10 +14,15 @@ commands:
     description: Lists detailed information for a recipe
     usage: /recipe <result>
     permission: replcraft.recipe
+  token:
+    description: Obtains your replcraft token
+    usage: /token
+    permission: replcraft.token
 
 permissions:
   replcraft.transact: { default: true, description: "Allows use of the /transact command" }
   replcraft.recipe: { default: true, description: "Allows use of the /recipe command" }
+  replcraft.token: { default: true, description: "Allows use of the /token command" }
   replcraft.auth.self: { default: true, description: "Allows obtaining tokens from signs with a matching username"}
   replcraft.auth.admin: { default: op, description: "Allows obtaining tokens from ANY sign, including those with the name '@ADMIN'"}
   replcraft.auth.public: { default: true, description: "Allows obtaining tokens from signs with the name '@PUBLIC'"}

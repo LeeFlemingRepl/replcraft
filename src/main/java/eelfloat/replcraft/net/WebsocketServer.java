@@ -5,6 +5,7 @@ import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.handlers.*;
 import eelfloat.replcraft.util.ApiUtil;
 import io.javalin.Javalin;
+import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsMessageContext;
 import org.bukkit.*;
@@ -13,10 +14,12 @@ import org.json.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public class WebsocketServer {
     public final Map<WsContext, Client> clients = new ConcurrentHashMap<>();
-    public final Map<String, WebsocketActionHandler> apis = new ConcurrentHashMap<>();
+
+    public final Map<String, WebsocketActionHandler> apis = new HashMap<>();
     private final Javalin app;
 
     public WebsocketServer() {
@@ -29,6 +32,7 @@ public class WebsocketServer {
         this.register(new GetPowerLevel());
         this.register(new GetSignText());
         this.register(new GetSize());
+        this.register(new Heartbeat());
         this.register(new MoveItem());
         this.register(new Poll());
         this.register(new PollAll());
@@ -47,20 +51,27 @@ public class WebsocketServer {
 
         app = Javalin.create();
         app.get("/", ctx -> ctx.result("Running ReplCraft v" + ReplCraft.plugin.getDescription().getVersion()));
-        app.ws("/gateway", ws -> {
-            ws.onConnect(ctx -> {
-                ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " connected.");
-                Client client = new Client(ctx);
-                for (WebsocketActionHandler tracker: this.apis.values())
-                    client.tracker(tracker);
-                clients.put(ctx, client);
+        HashMap<String, Function<WsConnectContext, Client>> versions = new HashMap<>();
+        versions.put("/gateway", (ctx) -> new ClientV1(ctx, this));
+        versions.put("/gateway/v2", (ctx) -> new ClientV2(ctx, this));
+        for (Map.Entry<String, Function<WsConnectContext, Client>> entry: versions.entrySet()) {
+            app.ws(entry.getKey(), ws -> {
+                ws.onConnect(ctx -> {
+                    Client client = entry.getValue().apply(ctx);
+                    ReplCraft.plugin.logger.info(String.format(
+                        "Client %s connected [%s].",
+                        ctx.session.getRemoteAddress(),
+                        client.getClass().getName()
+                    ));
+                    this.clients.put(ctx, client);
+                });
+                ws.onClose(ctx -> {
+                    ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " disconnected.");
+                    Bukkit.getScheduler().runTask(ReplCraft.plugin, this.clients.remove(ctx)::dispose);
+                });
+                ws.onMessage(this::onMessage);
             });
-            ws.onClose(ctx -> {
-                ReplCraft.plugin.logger.info("Client " + ctx.session.getRemoteAddress() + " disconnected.");
-                Bukkit.getScheduler().runTask(ReplCraft.plugin, clients.remove(ctx)::dispose);
-            });
-            ws.onMessage(this::onMessage);
-        });
+        }
         app.start(ReplCraft.plugin.listen_address, ReplCraft.plugin.listen_port);
     }
 
@@ -77,30 +88,44 @@ public class WebsocketServer {
             JSONObject response = new JSONObject();
             response.put("ok", true);
             response.put("nonce", nonce);
-            Client client = clients.get(ctx);
+
             String action = request.getString("action");
-
             WebsocketActionHandler handler = this.apis.get(action);
-            if (handler == null) throw new ApiError("bad request", "Unknown action");
+            if (handler == null) throw new ApiError(ApiError.BAD_REQUEST, "Unknown action: " + action);
 
-            if (handler.authenticated() && client.getStructure() == null) {
-                String error = client.isInvalidated()
-                    ? "Structure was invalidated"
-                    : "Connection isn't authenticated yet";
-                throw new ApiError("unauthenticated", error);
+            Client client = clients.get(ctx);
+            StructureContext context = client instanceof ClientV2
+                ? handler.authenticated()
+                    ? ((ClientV2) client).getContext(request.getLong("context"))
+                    : null
+                : client.getDefaultContext();
+
+            if (handler.authenticated()) {
+                if (context == null) {
+                    throw new ApiError(ApiError.UNAUTHENTICATED, "Invalid context");
+                }
+
+                if (context.getStructure() == null) {
+                    String error = context.isInvalidated()
+                            ? "Structure was invalidated"
+                            : "Connection isn't authenticated yet";
+                    throw new ApiError(ApiError.UNAUTHENTICATED, error);
+                }
+
+                if (!context.getStructure().material.apis.contains(action)) {
+                    throw new ApiError(ApiError.BAD_REQUEST, "This structure type doesn't support this API call.");
+                }
+
+                String permission = handler.permission();
+                if (permission != null) {
+                    OfflinePlayer player = context.getStructure().getPlayer();
+                    World world = context.getStructure().getWorld();
+                    if (!ReplCraft.plugin.permissionProvider.hasPermission(player, world, permission)) {
+                        throw new ApiError(ApiError.BAD_REQUEST, "You lack the permission to make this API call.");
+                    }
+                }
             }
 
-            if (client.getStructure() != null && !client.getStructure().material.apis.contains(action)) {
-                throw new ApiError("bad request", "This structure type doesn't support this API call.");
-            }
-
-            String permission = handler.permission();
-            if (permission != null) {
-                OfflinePlayer player = client.getStructure().getPlayer();
-                World world = client.getStructure().getWorld();
-                if (!ReplCraft.plugin.permissionProvider.hasPermission(player, world, permission))
-                    throw new ApiError("bad request", "You lack the permission to make this API call.");
-            }
 
             // --- Threading boundary! ---
             // Any code inside runTask() is run on the main server thread.
@@ -110,41 +135,42 @@ public class WebsocketServer {
             Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
                 try {
                     boolean freeFuel = (
-                        client.getStructure() != null &&
+                        context != null &&
                         ReplCraft.plugin.world_guard &&
                         ApiUtil.checkFlagOnStructure(
-                            client.getStructure(),
+                            context.getStructure(),
                             ReplCraft.plugin.worldGuard.replcraft_infinite_fuel
                         )
                     );
 
                     RequestContext requestContext = new RequestContext(
-                        client, ctx, request, response, finalNonce, freeFuel
+                        client, context, ctx, request, response, finalNonce
                     );
 
-                    if (client.getStructure() != null) {
+                    if (context != null) {
                         double fuelCost = (
                             handler.cost(requestContext) *
-                            client.getStructure().material.fuelMultiplier
+                            context.getStructure().material.fuelMultiplier
                         );
 
-                        if (!freeFuel && !client.useFuel(fuelCost)) {
+                        if (!freeFuel && !context.useFuel(fuelCost)) {
                             String message = String.format(
                                 "out of fuel (cost: %s). available strategies: provide %s of %s.",
-                                fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", client.getFuelSources()
+                                fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", context.getFuelSources()
                             );
-                            throw new ApiError("out of fuel", message);
+                            throw new ApiError(ApiError.OUT_OF_FUEL, message);
                         }
 
-                        client.tracker(handler).queue(fuelCost);
+                        context.tracker(handler).queue(fuelCost);
                     }
+
                     evaluateContinuation(requestContext, handler);
                 } catch(Exception ex) {
-                    ctx.send(toClientError(ex, finalNonce).toString());
+                    ctx.send(toClientError(ex, finalNonce, context).toString());
                 }
             });
         } catch (Exception ex) {
-            ctx.send(toClientError(ex, nonce).toString());
+            ctx.send(toClientError(ex, nonce, null).toString());
         }
     }
 
@@ -152,25 +178,26 @@ public class WebsocketServer {
      * Evaluates a continuation to completion
      * @param continuation the continuation to evaluate
      */
-    public static void evaluateContinuation(RequestContext ctx, ActionContinuation continuation) {
+    public static void evaluateContinuation(RequestContext requestContext, ActionContinuation continuation) {
         try {
-            ActionContinuation next = continuation.execute(ctx);
+            ActionContinuation next = continuation.execute(requestContext);
             if (next != null) {
-                Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> evaluateContinuation(ctx, next));
+                Bukkit.getScheduler().runTaskLater(ReplCraft.plugin, () -> evaluateContinuation(requestContext, next), 1);
             } else {
-                ctx.ctx.send(ctx.response.toString());
+                requestContext.wsContext.send(requestContext.response.toString());
             }
         } catch (Exception ex) {
-            ctx.ctx.send(WebsocketServer.toClientError(ex, ctx.nonce).toString());
+            JSONObject err = WebsocketServer.toClientError(ex, requestContext.nonce, requestContext.structureContext);
+            requestContext.wsContext.send(err.toString());
         }
     }
 
-    public static JSONObject toClientError(Exception ex, String nonce) {
+    public static JSONObject toClientError(Exception ex, String nonce, StructureContext context) {
         JSONObject json = new JSONObject();
         json.put("ok", false);
         json.put("nonce", nonce);
         if (ex instanceof JSONException) {
-            json.put("error", "bad request");
+            json.put("error", ApiError.BAD_REQUEST);
             json.put("message", ex.getMessage());
         } else if (ex instanceof ApiError) {
             json.put("error", ((ApiError) ex).type);

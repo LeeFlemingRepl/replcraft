@@ -8,11 +8,11 @@ import org.bukkit.World;
 public interface PermissionProvider {
     /**
      * Checks if the offline player has the given permission
-     * @param player
-     * @param world
-     * @param permission
-     * @return
-     * @throws ApiError
+     * @param player the player to look up the permission for
+     * @param world the world to look the permission up in
+     * @param permission the name of the permission
+     * @return if the player has the permission
+     * @throws ApiError if looking up the permission failed for some reason
      */
     boolean hasPermission(OfflinePlayer player, World world, String permission) throws ApiError;
 }

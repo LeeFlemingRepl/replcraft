@@ -16,6 +16,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.WallSign;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class StructureUtil {
@@ -191,16 +192,30 @@ public class StructureUtil {
     }
 
     /**
-     * Verifies a token and the associated structure
-     * @param json_web_token the jwt to verify
-     * @throws InvalidStructure if the structure is invalid or missing
-     * @return a validated structure
+     * Parses and validates the signature, but not the content, of a jwt
+     * @param json_web_token the token to parse
+     * @return the parsed and validated token's claims
+     * @throws ApiError if the token failed to parse
      */
-    public static Structure verifyToken(String json_web_token) throws InvalidStructure {
+    public static Claims parseToken(String json_web_token) throws ApiError {
         try {
-            Claims body = Jwts.parserBuilder()
+            return Jwts.parserBuilder()
                 .setSigningKey(ReplCraft.plugin.key).build()
                 .parseClaimsJws(json_web_token).getBody();
+        } catch(JwtException ex) {
+            throw new InvalidStructure("Token is invalid: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Verifies a token and the associated structure asynchronously. Callbacks will be called on the main server thread.
+     * @param json_web_token the jwt to verify
+     * @param ok a callback for a successfully validated structure
+     * @param err a callback for an unsuccessfully validated structure
+     */
+    public static void verifyTokenAsync(String json_web_token, Consumer<Structure> ok, Consumer<ApiError> err) {
+        try {
+            Claims body = parseToken(json_web_token);
             String worldName = body.get("world", String.class);
             World world = ReplCraft.plugin.getServer().getWorld(worldName);
             if (world == null) throw new InvalidStructure("Invalid world");
@@ -209,20 +224,31 @@ public class StructureUtil {
             int z = body.get("z", Integer.class);
             String username = body.get("username", String.class);
             UUID uuid = UUID.fromString(body.get("uuid", String.class));
-
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
 
-            String permission = String.format("replcraft.auth.%s", body.get("permission", String.class));
-            if (!ReplCraft.plugin.permissionProvider.hasPermission(offlinePlayer, world, permission)) {
-                String issue = String.format("This token was issued when you held the `%s` permission, but you no longer have it.", permission);
-                throw new ApiError("unauthenticated", issue);
-            }
-
-            return verifySign(world.getBlockAt(x, y, z), uuid, username::equals);
+            Bukkit.getScheduler().runTaskAsynchronously(ReplCraft.plugin, () -> {
+                try {
+                    // async required or else luckperms is unhappy
+                    String permission = String.format("replcraft.auth.%s", body.get("permission", String.class));
+                    if (!ReplCraft.plugin.permissionProvider.hasPermission(offlinePlayer, world, permission)) {
+                        String issue = String.format("This token was issued when you held the `%s` permission, but you no longer have it.", permission);
+                        throw new ApiError(ApiError.UNAUTHENTICATED, issue);
+                    }
+                    Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
+                        try {
+                            ok.accept(verifySign(world.getBlockAt(x, y, z), uuid, username::equals));
+                        } catch (ApiError ex) {
+                            err.accept(ex);
+                        }
+                    });
+                } catch (ApiError ex) {
+                    Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> err.accept(ex));
+                }
+            });
         } catch(JwtException ex) {
-            throw new InvalidStructure("Token is invalid: " + ex.getMessage(), ex);
-        } catch (ApiError e) {
-            throw new InvalidStructure("Token is invalid: " + e.message);
+            err.accept(new InvalidStructure("Token is invalid: " + ex.getMessage(), ex));
+        } catch (ApiError ex) {
+            err.accept(ex);
         }
     }
 }

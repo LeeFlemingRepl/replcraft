@@ -1,8 +1,5 @@
 package eelfloat.replcraft.permissions;
 
-import eelfloat.replcraft.Structure;
-import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;

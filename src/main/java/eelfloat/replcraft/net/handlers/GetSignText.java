@@ -31,9 +31,9 @@ public class GetSignText implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        BlockState state = getBlock(ctx.client, ctx.request).getState();
+        BlockState state = getBlock(ctx.structureContext, ctx.request).getState();
         if (!(state instanceof Sign)) {
-            throw new ApiError("invalid operation", "block is not a sign");
+            throw new ApiError(ApiError.INVALID_OPERATION, "block is not a sign");
         }
         ctx.response.put("lines", ((Sign) state).getLines());
         return null;

@@ -2,9 +2,7 @@ package eelfloat.replcraft.net.handlers;
 
 import eelfloat.replcraft.net.RequestContext;
 
-import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
-    
 public class WatchAll implements WebsocketActionHandler {
     @Override
     public String route() {
@@ -28,7 +26,7 @@ public class WatchAll implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) {
-        ctx.client.setWatchAll(true);
+        ctx.structureContext.setWatchAll(true);
         return null;
     }
 }

@@ -29,7 +29,7 @@ public class GetPowerLevel implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        ctx.response.put("power", getBlock(ctx.client, ctx.request).getBlockPower());
+        ctx.response.put("power", getBlock(ctx.structureContext, ctx.request).getBlockPower());
         return null;
     }
 }

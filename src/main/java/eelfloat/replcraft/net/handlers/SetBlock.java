@@ -35,7 +35,7 @@ public class SetBlock implements WebsocketActionHandler {
     @Override
     public double cost(RequestContext ctx) {
         double base = FuelCost.BlockChange.toDouble();
-        int chests = ctx.client.getStructure().chests.size();
+        int chests = ctx.structureContext.getStructure().chests.size();
         int minChests = ReplCraft.plugin.fuel_cost_per_structure_inventory_start;
         double perChest = ReplCraft.plugin.fuel_cost_per_structure_inventory;
         return base + Math.max(chests - minChests, 0) * perChest;
@@ -53,10 +53,10 @@ public class SetBlock implements WebsocketActionHandler {
             ApiUtil.validateBlockData(blockDataString);
 
             Inventory source = !ctx.request.isNull("source_x")
-                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.client, ctx.request, "source_x", "source_y", "source_z"), "source")
+                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request, "source_x", "source_y", "source_z"), "source")
                 : null;
             Inventory destination = !ctx.request.isNull("target_x")
-                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.client, ctx.request, "target_x", "target_y", "target_z"), "destination")
+                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request, "target_x", "target_y", "target_z"), "destination")
                 : null;
 
             BlockData blockData = ReplCraft.plugin.getServer().createBlockData(blockDataString);
@@ -68,28 +68,28 @@ public class SetBlock implements WebsocketActionHandler {
                     int i = source.first(material);
                     if (i != -1) stack = source.getItem(i);
                 } else {
-                    stack = ctx.client.getStructure().findMaterial(material);
+                    stack = ctx.structureContext.getStructure().findMaterial(material);
                 }
                 if (stack == null) {
                     String message = "No " + material + " available in any attached chests.";
-                    throw new ApiError("invalid operation", message);
+                    throw new ApiError(ApiError.INVALID_OPERATION, message);
                 }
                 stack.setAmount(stack.getAmount() - 1);
             }
 
-            Block target = ApiUtil.getBlock(ctx.client, ctx.request);
-            ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, target.getLocation());
+            Block target = ApiUtil.getBlock(ctx.structureContext, ctx.request);
+            ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, target.getLocation());
 
             if (ReplCraft.plugin.block_protection) {
                 // Simulate breaking the block to see if GriefPrevention et al. would deny it
-                OfflinePlayer offlinePlayer = ctx.client.getStructure().getPlayer();
+                OfflinePlayer offlinePlayer = ctx.structureContext.getStructure().getPlayer();
                 if (!(offlinePlayer instanceof Player)) {
                     throw ApiError.OFFLINE;
                 }
                 BlockBreakEvent evt = new BlockBreakEvent(target, (Player) offlinePlayer);
                 Bukkit.getPluginManager().callEvent(evt);
                 if (evt.isCancelled()) {
-                    throw new ApiError("bad request", "block break event was cancelled by another plugin");
+                    throw new ApiError(ApiError.BAD_REQUEST, "block break event was cancelled by another plugin");
                 }
             }
 
@@ -119,19 +119,19 @@ public class SetBlock implements WebsocketActionHandler {
             }
 
             if (ReplCraft.plugin.core_protect) {
-                String player = ctx.client.getStructure().getPlayer().getName();
+                String player = ctx.structureContext.getStructure().getPlayer().getName();
                 ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", target.getLocation(), material, blockData);
             }
 
             for (ItemStack drop: drops) {
                 ItemStack leftover = destination != null
                     ? destination.addItem(drop).values().stream().findFirst().orElse(null)
-                    : ctx.client.getStructure().deposit(drop);
+                    : ctx.structureContext.getStructure().deposit(drop);
                 if (leftover != null) target.getWorld().dropItemNaturally(location, leftover);
             }
         } catch (IllegalArgumentException ex) {
             ex.printStackTrace();
-            throw new ApiError("bad request", ex.toString());
+            throw new ApiError(ApiError.BAD_REQUEST, ex.toString());
         }
         return null;
     }

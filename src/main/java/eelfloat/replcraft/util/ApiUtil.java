@@ -8,7 +8,7 @@ import com.sk89q.worldguard.protection.regions.RegionQuery;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimPermission;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -42,7 +42,7 @@ public class ApiUtil {
     public static Inventory getContainer(Block container, String term) throws ApiError {
         BlockState sourceState = container.getState();
         if (!(sourceState instanceof Container)) {
-            throw new ApiError("invalid operation", term + " isn't a container");
+            throw new ApiError(ApiError.INVALID_OPERATION, term + " isn't a container");
         }
         return ((Container) sourceState).getInventory();
     }
@@ -57,7 +57,7 @@ public class ApiUtil {
      */
     public static ItemStack getItem(Block container, String term, int index) throws ApiError {
         ItemStack item = getContainer(container, term).getItem(index);
-        if (item == null) throw new ApiError("invalid operation", "no item at specified index");
+        if (item == null) throw new ApiError(ApiError.INVALID_OPERATION, "no item at specified index");
         return item;
     }
 
@@ -71,12 +71,12 @@ public class ApiUtil {
         if (ReplCraft.plugin.grief_prevention) {
             Claim claim = GriefPrevention.instance.dataStore.getClaimAt(location, false, null);
             if (claim != null && !claim.hasExplicitPermission(player, ClaimPermission.Build))
-                throw new ApiError("invalid operation", "This block is protected by GriefPrevention.");
+                throw new ApiError(ApiError.INVALID_OPERATION, "This block is protected by GriefPrevention.");
         }
         if (ReplCraft.plugin.world_guard) {
             ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(location));
             if (set.queryState(null, ReplCraft.plugin.worldGuard.replcraft_enabled) != StateFlag.State.ALLOW) {
-                throw new ApiError("invalid operation", "This block is protected by WorldGuard.");
+                throw new ApiError(ApiError.INVALID_OPERATION, "This block is protected by WorldGuard.");
             }
         }
     }
@@ -125,7 +125,7 @@ public class ApiUtil {
                     continue;
 
                 default:
-                    throw new ApiError("bad request", String.format("Disallowed block state tag \"%s\"", name));
+                    throw new ApiError(ApiError.BAD_REQUEST, String.format("Disallowed block state tag \"%s\"", name));
             }
         }
     }
@@ -153,11 +153,11 @@ public class ApiUtil {
         }
     }
 
-    public static Block getBlock(Client client, JSONObject request) throws ApiError {
-        return getBlock(client, request, "x", "y", "z");
+    public static Block getBlock(StructureContext structureContext, JSONObject request) throws ApiError {
+        return getBlock(structureContext, request, "x", "y", "z");
     }
 
-    public static OfflinePlayer getTargetPlayer(Client client, JSONObject request) throws ApiError {
+    public static OfflinePlayer getTargetPlayer(StructureContext structureContext, JSONObject request) throws ApiError {
         String targetId = request.getString("target");
         try {
             UUID uuid = UUID.fromString(targetId);
@@ -166,7 +166,7 @@ public class ApiUtil {
             Player target = ReplCraft.plugin.getServer().getPlayer(targetId);
             if (target == null) {
                 throw new ApiError(
-                    "bad request",
+                    ApiError.BAD_REQUEST,
                     "Player with given name is not online. Use a UUID to pay to offline players."
                 );
             }
@@ -174,12 +174,12 @@ public class ApiUtil {
         }
     }
 
-    public static Block getBlock(Client client, JSONObject request, String label_x, String label_y, String label_z) throws ApiError {
+    public static Block getBlock(StructureContext structureContext, JSONObject request, String label_x, String label_y, String label_z) throws ApiError {
         int x = request.getInt(label_x);
         int y = request.getInt(label_y);
         int z = request.getInt(label_z);
-        Block block = client.getStructure().getBlock(x, y, z);
-        if (block == null) throw new ApiError("bad request", "block out of bounds");
+        Block block = structureContext.getStructure().getBlock(x, y, z);
+        if (block == null) throw new ApiError(ApiError.BAD_REQUEST, "block out of bounds");
         return block;
     }
 }

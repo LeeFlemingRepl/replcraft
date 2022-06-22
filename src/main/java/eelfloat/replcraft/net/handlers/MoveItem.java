@@ -34,10 +34,10 @@ public class MoveItem implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        Block source = ApiUtil.getBlock(ctx.client, ctx.request, "source_x", "source_y", "source_z");
-        Block target = ApiUtil.getBlock(ctx.client, ctx.request, "target_x", "target_y", "target_z");
-        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, source.getLocation());
-        ApiUtil.checkProtectionPlugins(ctx.client.getStructure().minecraft_uuid, target.getLocation());
+        Block source = ApiUtil.getBlock(ctx.structureContext, ctx.request, "source_x", "source_y", "source_z");
+        Block target = ApiUtil.getBlock(ctx.structureContext, ctx.request, "target_x", "target_y", "target_z");
+        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, source.getLocation());
+        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, target.getLocation());
         int index = ctx.request.getInt("index");
         int amount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
         int targetIndex = ctx.request.isNull("target_index") ? -1 : ctx.request.getInt("target_index");
@@ -48,12 +48,12 @@ public class MoveItem implements WebsocketActionHandler {
 
         if (amount == 0) amount = item.getAmount();
         if (amount > item.getAmount()) {
-            throw new ApiError("invalid operation", "tried to move more items than there are");
+            throw new ApiError(ApiError.INVALID_OPERATION, "tried to move more items than there are");
         }
         ItemStack moved = item.clone();
         moved.setAmount(amount);
         if (ReplCraft.plugin.core_protect) {
-            String player = ctx.client.getStructure().getPlayer().getName();
+            String player = ctx.structureContext.getStructure().getPlayer().getName();
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", source.getLocation());
             ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", target.getLocation());
         }
@@ -73,7 +73,7 @@ public class MoveItem implements WebsocketActionHandler {
             } else {
                 if (!existingItem.isSimilar(moved)) {
                     throw new ApiError(
-                        "invalid operation",
+                        ApiError.INVALID_OPERATION,
                         "failed to move item: item exists in target slot and is a different type"
                     );
                 }
@@ -91,7 +91,7 @@ public class MoveItem implements WebsocketActionHandler {
             for (ItemStack value: leftover) {
                 source_inventory.addItem(value);
             }
-            throw new ApiError("invalid operation", "failed to move all items");
+            throw new ApiError(ApiError.INVALID_OPERATION, "failed to move all items");
         }
         return null;
     }

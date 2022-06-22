@@ -1,9 +1,6 @@
 package eelfloat.replcraft.net;
 
-import eelfloat.replcraft.ReplCraft;
-import eelfloat.replcraft.net.handlers.ActionContinuation;
 import io.javalin.websocket.WsMessageContext;
-import org.bukkit.Bukkit;
 import org.json.JSONObject;
 
 /**
@@ -11,20 +8,25 @@ import org.json.JSONObject;
  */
 public class RequestContext {
     public final Client client;
-    public final WsMessageContext ctx;
+    public final StructureContext structureContext;
+    public final WsMessageContext wsContext;
     public final JSONObject request;
     public final JSONObject response;
     public final String nonce;
-    public final boolean freeFuel;
 
     public RequestContext(
-        Client client, WsMessageContext ctx, JSONObject request, JSONObject response, String nonce, boolean freeFuel
+            Client client,
+            StructureContext structureContext,
+            WsMessageContext wsContext,
+            JSONObject request,
+            JSONObject response,
+            String nonce
     ) {
         this.client = client;
-        this.ctx = ctx;
+        this.structureContext = structureContext;
+        this.wsContext = wsContext;
         this.request = request;
         this.response = response;
         this.nonce = nonce;
-        this.freeFuel = freeFuel;
     }
 }

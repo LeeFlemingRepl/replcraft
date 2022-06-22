@@ -101,10 +101,12 @@ public class Structure {
         for (int x = min_x; x < max_x; x++) {
             for (int z = min_z; z < max_z; z++) {
                 int finalX = x, finalZ = z;
-                boolean loadedElsewhere = ReplCraft.plugin.websocketServer.clients.values().stream().anyMatch(client -> {
-                    Structure structure = client.getStructure();
-                    return structure.loaded && structure.containsChunk(finalX, finalZ);
-                });
+                boolean loadedElsewhere = ReplCraft.plugin.websocketServer.clients.values().stream()
+                    .flatMap(client -> client.getContexts().stream())
+                    .anyMatch(ctx -> {
+                        Structure structure = ctx.getStructure();
+                        return structure.loaded && structure.containsChunk(finalX, finalZ);
+                    });
                 if (!loadedElsewhere) {
                     this.sign.getLocation().getWorld().removePluginChunkTicket(x, z, ReplCraft.plugin);
                     ReplCraft.plugin.logger.info("Removing ticket for chunk " + x + ", " + z);

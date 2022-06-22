@@ -1,25 +1,25 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.net.Client;
+import eelfloat.replcraft.net.StructureContext;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 public class ItemFuelStrategy extends FuelStrategy {
-    private final Client client;
+    private final StructureContext structureContext;
     private final Material material;
     private final double fuel_per_item;
 
-    public ItemFuelStrategy(Client client, Material material, double fuel_per_item) {
-        this.client = client;
+    public ItemFuelStrategy(StructureContext structureContext, Material material, double fuel_per_item) {
+        this.structureContext = structureContext;
         this.material = material;
         this.fuel_per_item = fuel_per_item;
     }
 
     @Override
-    public double generate(double fuel, Client client) {
+    public double generate(double fuel, StructureContext structureContext) {
         double generated = 0;
         while (generated < fuel) {
-            ItemStack stack = this.client.getStructure().findMaterial(this.material);
+            ItemStack stack = this.structureContext.getStructure().findMaterial(this.material);
             if (stack == null) break;
             stack.setAmount(stack.getAmount() - 1);
             generated += fuel_per_item;

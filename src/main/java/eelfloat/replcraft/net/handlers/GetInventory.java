@@ -17,6 +17,7 @@ import static eelfloat.replcraft.util.ApiUtil.getBlock;
 
     
 public class GetInventory implements WebsocketActionHandler {
+
     @Override
     public String route() {
         return "get_inventory";
@@ -40,9 +41,9 @@ public class GetInventory implements WebsocketActionHandler {
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         JSONArray items = new JSONArray();
-        BlockState state = getBlock(ctx.client, ctx.request).getState();
+        BlockState state = getBlock(ctx.structureContext, ctx.request).getState();
         if (!(state instanceof Container)) {
-            throw new ApiError("invalid operation", "block isn't a container");
+            throw new ApiError(ApiError.INVALID_OPERATION, "block isn't a container");
         }
         ItemStack[] contents = ((Container) state).getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {

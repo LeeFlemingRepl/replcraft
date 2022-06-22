@@ -29,7 +29,7 @@ public class GetBlock implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        ctx.response.put("block", getBlock(ctx.client, ctx.request).getBlockData().getAsString());
+        ctx.response.put("block", getBlock(ctx.structureContext, ctx.request).getBlockData().getAsString());
         return null;
     }
 }
