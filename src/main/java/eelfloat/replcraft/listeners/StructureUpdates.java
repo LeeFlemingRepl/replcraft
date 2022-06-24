@@ -5,11 +5,13 @@ import eelfloat.replcraft.net.Client;
 import eelfloat.replcraft.net.StructureContext;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
+import org.bukkit.event.world.StructureGrowEvent;
 
 public class StructureUpdates implements Listener {
     /**
@@ -53,6 +55,13 @@ public class StructureUpdates implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockGrow(BlockGrowEvent event) {
         notifyBlockChange("grow", event.getBlock().getBlockData(), event.getBlock().getLocation(), false);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onStructureGrowEvent(StructureGrowEvent event) {
+        for (BlockState block: event.getBlocks()) {
+            notifyBlockChange("structure_grow", block.getBlockData(), block.getLocation(), false);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
