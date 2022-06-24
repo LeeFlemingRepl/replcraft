@@ -1,6 +1,8 @@
 package eelfloat.replcraft.command;
 
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.StructureMaterial;
+import eelfloat.replcraft.StructureType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.bukkit.Material;
@@ -14,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 public class ReplizeToolExecutor implements CommandExecutor {
@@ -27,6 +30,17 @@ public class ReplizeToolExecutor implements CommandExecutor {
         ItemStack stack = ((Player) sender).getInventory().getItemInMainHand();
         if (stack.getType() == Material.AIR) {
             sender.sendMessage("Please hold a tool to replize");
+            return true;
+        }
+
+        Optional<StructureMaterial> material = ReplCraft.plugin.frame_materials.stream()
+            .filter(mats -> (
+                mats.validMaterials.stream().anyMatch(mat -> stack.getType() == mat) &&
+                mats.type == StructureType.Item
+            ))
+            .findAny();
+        if (!material.isPresent()) {
+            sender.sendMessage("This tool cannot be replized. There's no structure type definition with matching material.");
             return true;
         }
 

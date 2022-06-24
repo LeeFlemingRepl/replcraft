@@ -48,12 +48,11 @@ public class StructureContext {
     public StructureContext(long id, Client client, Structure structure, String authenticationToken) {
         this.id = id;
         this.client = client;
-        this.strategies = ReplCraft.plugin.strategies.stream()
-            .map(strat -> strat.apply(this))
-            .collect(Collectors.toList());
-        //ReplCraft.plugin.logger.info("Updated strategies for " + this.getStructure() + ": " + this.getFuelSources());
         this.authentication = authenticationToken;
         this.setStructure(structure);
+        this.strategies = this.structure.material.strategies.stream()
+            .map(strat -> strat.apply(this))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -92,7 +91,7 @@ public class StructureContext {
             return true; // no enabled strategies
 
         final double tolerance = 0.01;
-        if (ReplCraft.plugin.consume_from_all) {
+        if (this.structure.material.consumeFromAll) {
             double finalAmount = amount;
             if (!strategies.stream().allMatch(strat -> Math.abs(strat.consume(finalAmount, this) - finalAmount) < tolerance)) {
                 strategies.forEach(FuelStrategy::cancel_and_restore);

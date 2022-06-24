@@ -10,11 +10,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.UUID;
 
-public class VirtualStructure extends Structure {
-    private final Player player;
-    private final ItemStack item;
+public class ItemVirtualStructure extends Structure {
+    public final Player player;
+    public final ItemStack item;
 
-    public VirtualStructure(
+    public ItemVirtualStructure(
         Player player,
         ItemStack item,
         StructureMaterial material,

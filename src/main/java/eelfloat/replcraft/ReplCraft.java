@@ -25,6 +25,7 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -56,7 +57,6 @@ public final class ReplCraft extends JavaPlugin {
 
     public boolean creative_mode;
 
-    public boolean consume_from_all;
     public double cost_per_api_call;
     public double cost_per_expensive_api_call;
     public double cost_per_block_change_api_call;
@@ -67,9 +67,8 @@ public final class ReplCraft extends JavaPlugin {
     public double fuel_cost_per_structure_inventory = 0.25;
     /** The minimum number of chests before fuel_cost_per_structure_inventory takes effect */
     public int fuel_cost_per_structure_inventory_start = 4;
-
-    /** The fuel strategies, which provide fuel consumption. */
-    public List<Function<StructureContext, FuelStrategy>> strategies = new ArrayList<>();
+    /** The fuel strategies, which provide fuel consumption. Map from name to factory. */
+    public HashMap<String, Function<StructureContext, FuelStrategy>> strategies = new HashMap<>();
     /** The permission provider, which provides bukkit permissions for Clients */
     public PermissionProvider permissionProvider;
     /** The cryptographic key used to sign auth tokens */
@@ -107,31 +106,12 @@ public final class ReplCraft extends JavaPlugin {
         websocketServer = new WebsocketServer();
         Thread.currentThread().setContextClassLoader(classLoader);
 
-        for (Map<?, ?> structureType: config.getMapList("materials")) {
-            String name = (String) structureType.get("name");
-            int maxSize = ((Number) structureType.get("max_size")).intValue();
-            double fuelMultiplier = ((Number) structureType.get("fuel_multiplier")).doubleValue();
-            //noinspection unchecked
-            Set<Material> valid = ((Collection<String>) structureType.get("valid")).stream().map(matName -> {
-                Material mat = Material.matchMaterial(matName);
-                if (mat == null) throw new RuntimeException("Failed to parse material " + matName);
-                return mat;
-            }).collect(Collectors.toSet());
-            Set<String> apis = new HashSet<>();
-            if (Objects.equals(structureType.get("apis"), "all")) {
-                apis.addAll(websocketServer.apis.keySet());
-            } else {
-                //noinspection unchecked
-                apis.addAll((Collection<String>) structureType.get("apis"));
-            }
-            frame_materials.add(new StructureMaterial(name, maxSize, fuelMultiplier, valid, apis));
-        }
-
 
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");
         RegisteredServiceProvider<Economy> rspe = getServer().getServicesManager().getRegistration(Economy.class);
         if (vault != null && rspe != null)
             economy = rspe.getProvider();
+        logger.info(String.format("Vault %s rspe %s economy %s", vault, rspe, economy));
 
         block_protection = config.getBoolean("protection.default_block");
         sign_protection = config.getBoolean("protection.default_sign");
@@ -153,47 +133,103 @@ public final class ReplCraft extends JavaPlugin {
             }
         }
 
-        consume_from_all = config.getBoolean("fuel.consume_from_all");
         cost_per_api_call = config.getDouble("fuel.cost_per_api_call");
         cost_per_expensive_api_call = config.getDouble("fuel.cost_per_expensive_api_call");
         cost_per_block_change_api_call = config.getDouble("fuel.cost_per_block_change_api_call");
 
-        if (config.getBoolean("fuel.ratelimit_strategy.enabled")) {
-            double fuel_per_sec = config.getDouble("fuel.ratelimit_strategy.fuel_per_sec");
-            double max_fuel = config.getDouble("fuel.ratelimit_strategy.max_fuel");
-            boolean shared = config.getBoolean("fuel.ratelimit_strategy.enabled");
-            logger.info("Creating new " + (shared ? "shared" : "independent") + " ratelimit strategies");
-            strategies.add(client -> {
-                if (shared) {
-                    return ratelimiters.get(
-                        client.getStructure().minecraft_uuid,
-                        () -> {
-                            logger.info("Created new global ratelimit strategy for " + client.getStructure().minecraft_username);
-                            return new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
-                        }
-                    );
-                } else {
-                    logger.info("Created new per-connection ratelimit strategy");
-                    return new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
-                }
-            });
+        strategies.put("leftover", ctx -> new LeftoverFuelStrategy());
+        ConfigurationSection strats = config.getConfigurationSection("fuel.strategies");
+        for (String key: strats.getKeys(false)) {
+            ConfigurationSection strat = strats.getConfigurationSection(key);
+            String type = strat.getString("type", "");
+            Function<StructureContext, FuelStrategy> stratProvider = null;
+            switch (type) {
+                case "ratelimit":
+                    double fuel_per_sec = strat.getDouble("fuel_per_sec");
+                    double max_fuel = strat.getDouble("max_fuel");
+                    boolean shared = strat.getBoolean("shared");
+                    logger.info("Creating new " + (shared ? "shared" : "independent") + " ratelimit strategies");
+                    RatelimitFuelStrategy sharedStrat = new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
+                    stratProvider = !shared
+                        ? ctx -> new RatelimitFuelStrategy(fuel_per_sec, max_fuel)
+                        : ctx -> sharedStrat;
+                    break;
+
+                case "item":
+                    String mat_name = strat.getString("item", "");
+                    Material material = Material.getMaterial(mat_name);
+                    if (material == null) {
+                        throw new RuntimeException(String.format("fuel.strategies.%s.item: invalid material", key));
+                    }
+                    double fuel = strat.getDouble("fuel.item_strategy.fuel_provided");
+                    stratProvider = ctx -> new ItemFuelStrategy(ctx, material, fuel);
+                    break;
+
+                case "economy":
+                    double fuel_price = strat.getDouble("fuel_price");
+                    if (vault == null) throw new RuntimeException("Vault API not found, install or disable economy_strategy.");
+                    if (rspe == null) throw new RuntimeException("Economy API provider not found, install one or disable economy_strategy.");
+                    stratProvider = client -> new EconomyFuelStrategy(client, fuel_price);
+                    break;
+
+                case "durability":
+                    double fuel_per_unit = strat.getDouble("fuel_per_unit");
+                    stratProvider = client -> new DurabilityFuelStrategy(fuel_per_unit);
+                    break;
+
+                default: throw new RuntimeException(String.format("fuel.strategies.%s.type: unknown type", key));
+            }
+            strategies.put(key, stratProvider);
         }
+        ReplCraft.plugin.logger.info("Loaded strategies: " + strategies.keySet().toString());
 
-        strategies.add(client -> new LeftoverFuelStrategy());
+        for (Map<?, ?> structureType: config.getMapList("materials")) {
+            String name = (String) structureType.get("name");
 
-        if (config.getBoolean("fuel.item_strategy.enabled")) {
-            String mat_name = config.getString("fuel.item_strategy.item", "");
-            Material material = Material.getMaterial(mat_name);
-            if (material == null) throw new RuntimeException("fuel.item_strategy.item: invalid material");
-            double fuel = config.getDouble("fuel.item_strategy.fuel_provided");
-            strategies.add(client -> new ItemFuelStrategy(client, material, fuel));
-        }
+            String typeName = (String) structureType.get("type");
+            typeName = typeName.substring(0, 1).toUpperCase() + typeName.substring(1).toLowerCase();
+            StructureType type = StructureType.valueOf(typeName);
 
-        if (config.getBoolean("fuel.economy_strategy.enabled")) {
-            double fuel_price = config.getDouble("fuel.economy_strategy.fuel_price");
-            if (vault == null) throw new RuntimeException("Vault API not found, install or disable economy_strategy.");
-            if (rspe == null) throw new RuntimeException("Economy API provider not found, install one or disable economy_strategy.");
-            strategies.add(client -> new EconomyFuelStrategy(client, fuel_price));
+            int maxSize = type == StructureType.Structure ? ((Number) structureType.get("max_size")).intValue() : 0;
+            double fuelMultiplier = ((Number) structureType.get("fuel_multiplier")).doubleValue();
+            boolean consumeFromAll = (Boolean) structureType.get("consume_from_all_strategies");
+
+            //noinspection unchecked
+            Set<Material> valid = ((Collection<String>) structureType.get("valid"))
+                .stream()
+                .map(matName -> {
+                    Material mat = Material.matchMaterial(matName);
+                    if (mat == null) throw new RuntimeException("Failed to parse material " + matName);
+                    return mat;
+                })
+                .collect(Collectors.toSet());
+
+            Set<String> apis = new HashSet<>();
+            if (Objects.equals(structureType.get("apis"), "all")) {
+                apis.addAll(websocketServer.apis.keySet());
+            } else {
+                //noinspection unchecked
+                apis.addAll((Collection<String>) structureType.get("apis"));
+            }
+
+            //noinspection unchecked
+            Set<Function<StructureContext, FuelStrategy>> applicableStrategies =
+                ((Collection<String>) structureType.get("strategies"))
+                .stream()
+                .map(strategyName -> {
+                    if (!strategies.containsKey(strategyName)) {
+                        throw new RuntimeException(String.format(
+                            "No such strategy %s on structure type %s",
+                            strategyName, name
+                        ));
+                    }
+                    return strategies.get(strategyName);
+                })
+                .collect(Collectors.toSet());
+
+            frame_materials.add(new StructureMaterial(
+                name, type, maxSize, fuelMultiplier, valid, apis, applicableStrategies, consumeFromAll
+            ));
         }
 
         permissionProvider = new DefaultPermissionProvider();

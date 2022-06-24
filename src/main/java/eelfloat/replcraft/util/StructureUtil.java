@@ -4,6 +4,7 @@ import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.StructureMaterial;
+import eelfloat.replcraft.StructureType;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.exceptions.InvalidStructure;
 import io.jsonwebtoken.Claims;
@@ -109,13 +110,17 @@ public class StructureUtil {
                 }
                 boolean isValidStructureMaterial = material == null
                     ? ReplCraft.plugin.frame_materials.stream()
+                        .filter(mat -> mat.type == StructureType.Structure)
                         .flatMap(mats -> mats.validMaterials.stream())
                         .anyMatch(mat -> relative.getType() == mat)
                     : material.validMaterials.contains(relative.getType());
                 if (isValidStructureMaterial && !seen.contains(location)) {
                     if (material == null) {
                         material = ReplCraft.plugin.frame_materials.stream()
-                            .filter(mats -> mats.validMaterials.contains(relative.getType()))
+                            .filter(mats -> (
+                                mats.validMaterials.contains(relative.getType()) &&
+                                mats.type == StructureType.Structure
+                            ))
                             .findFirst().orElseThrow(() -> new RuntimeException("unreachable"));
                         ReplCraft.plugin.logger.info("Structure type determined to be " + material.name);
                     }

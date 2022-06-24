@@ -1,30 +1,39 @@
 package eelfloat.replcraft;
 
+import eelfloat.replcraft.net.StructureContext;
+import eelfloat.replcraft.strategies.FuelStrategy;
 import org.bukkit.Material;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public class StructureMaterial {
     public final String name;
+    public final StructureType type;
     public final int max_size;
     public final double fuelMultiplier;
     public final Set<Material> validMaterials;
     public final Set<String> apis;
+    public final Set<Function<StructureContext, FuelStrategy>> strategies;
+    public final boolean consumeFromAll;
 
-    public static final StructureMaterial META_MATERIAL = new StructureMaterial(
-        "abstract",
-        0,
-        1.0,
-        new HashSet<>(),
-        new HashSet<>(ReplCraft.plugin.websocketServer.apis.keySet())
-    );
-
-    public StructureMaterial(String name, int max_size, double fuelMultiplier, Set<Material> validMaterials, Set<String> apis) {
+    public StructureMaterial(
+            String name,
+            StructureType type,
+            int max_size,
+            double fuelMultiplier,
+            Set<Material> validMaterials,
+            Set<String> apis,
+            Set<Function<StructureContext, FuelStrategy>> strategies,
+            boolean consumeFromAll
+    ) {
         this.name = name;
+        this.type = type;
         this.max_size = max_size;
         this.fuelMultiplier = fuelMultiplier;
         this.validMaterials = validMaterials;
         this.apis = apis;
+        this.strategies = strategies;
+        this.consumeFromAll = consumeFromAll;
     }
 }

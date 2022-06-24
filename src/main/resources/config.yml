@@ -10,55 +10,6 @@ listen_port: 28080
 # May also be used for other APIs in the future (e.g. being able to spawn arbitrary items)
 creative_mode: false
 
-# What materials each structure can be made out of
-# Different materials support different max sizes and APIs
-materials:
-  - name: glass
-    max_size: 25
-    fuel_multiplier: 1.0
-    valid:
-      - "minecraft:glass"
-    apis:
-      - "watch"
-      - "unwatch"
-      - "poll"
-      - "unpoll"
-      - "get_block"
-      - "get_entities"
-      - "get_inventory"
-      - "get_sign_text"
-      - "get_size"
-      - "get_location"
-      - "get_power_level"
-
-  - name: copper
-    max_size: 100
-    fuel_multiplier: 1.0
-    valid:
-      - "minecraft:copper_block"
-      - "minecraft:exposed_copper"
-      - "minecraft:weathered_copper"
-      - "minecraft:oxidized_copper"
-      - "minecraft:waxed_copper_block"
-      - "minecraft:waxed_exposed_copper"
-      - "minecraft:waxed_weathered_copper"
-      - "minecraft:waxed_oxidized_copper"
-    apis: all
-
-  - name: iron
-    max_size: 1000
-    fuel_multiplier: 1.0
-    valid:
-      - "minecraft:iron_block"
-    apis: all
-
-  - name: golden
-    max_size: 1000
-    fuel_multiplier: 0.5
-    valid:
-      - "minecraft:gold_block"
-    apis: all
-
 protection:
   # Uses Vault to obtain permissions for OfflinePlayers
   # Warning: disabling this requires the player to be online. API requests will throw errors otherwise.
@@ -82,10 +33,6 @@ protection:
 
 # Fuel configuration (required to make API calls)
 fuel:
-  # When true, all enabled strategies must provide fuel per call.
-  # When false, any available strategy will provide fuel for calls.
-  consume_from_all: true
-
   # Base cost per request
   cost_per_api_call: 0.1
   # Cost for 'expensive' requests: get_entities get_inventory move_item
@@ -93,25 +40,112 @@ fuel:
   # Cost for 'set_block' request
   cost_per_block_change_api_call: 1
 
-  # Note: if no strategies are enabled, requests will be free.
+  # Note: if no strategies are used in a structure type, requests will be free.
+  # Name-value listing of strategies
+  strategies:
+    ratelimit_strategy: # name of strategy
+      # Ratelimiting strategy: generates fuel at a steady rate
+      type: ratelimit
+      # If the ratelimit is shared between all of a player's connections
+      # Note that this is shared _for the strategy type_, you can have multiple ratelimit strategies
+      # with independent pools
+      # May lead to high contention
+      shared: true
+      fuel_per_sec: 1
+      max_fuel: 25
 
-  # Ratelimiting strategy: generates fuel at a steady rate
-  ratelimit_strategy:
-    enabled: false
-    # If the ratelimit is shared between all of a player's connections
-    # May lead to high contention
-    shared: true
-    fuel_per_sec: 1
-    max_fuel: 25
-  # Item strategy: items will be burned from connected chests.
-  item_strategy:
-    enabled: false
-    item: "DIAMOND"
-    fuel_provided: 1000
-  # Economy strategy: generates fuel using economy plugin money
-  economy_strategy:
-    enabled: false
-    fuel_price: 1 # money unit per fuel unit
+    item_strategy:
+      # Item strategy: items will be burned from connected chests.
+      type: item
+      item: "DIAMOND"
+      fuel_provided: 1000
+
+    economy_strategy:
+      # Economy strategy: generates fuel using economy plugin money
+      type: economy
+      fuel_price: 1 # money unit per fuel unit
+
+    durability_strategy:
+      # Durability strategy: generates fuel by consuming tool durability
+      type: durability
+      fuel_per_unit: 1 # fuel provided per point of durability
+
+
+# What materials each structure can be made out of
+# Different materials support different max sizes and APIs
+materials:
+  - name: glass
+    # What type of structure ("structure" for physical cube frames, "item" for dynamic virtual `/replize`d item contexts)
+    type: structure
+    # The maximum number of frame blocks the structure type can have
+    max_size: 25
+    # The fuel multiplier for all API calls made with this structure type
+    fuel_multiplier: 1.0
+    # The fuel strategies this type of structure is allowed to use. Order matters!
+    # "leftover" is a special strategy that collects spare fuel from expired structure contexts
+    # (e.g. unused items) into a player-global pool that other structures can recycle.
+    strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
+    # When true, all enabled strategies must provide fuel per call.
+    # When false, any available strategy will provide fuel for calls.
+    consume_from_all_strategies: false
+    # What block (or item) materials are valid for this structure type
+    valid: ["minecraft:glass"]
+    # The APIs the structure can use
+    apis:
+      - "watch"
+      - "unwatch"
+      - "poll"
+      - "unpoll"
+      - "get_block"
+      - "get_entities"
+      - "get_inventory"
+      - "get_sign_text"
+      - "get_size"
+      - "get_location"
+      - "get_power_level"
+
+  - name: copper
+    type: structure
+    max_size: 100
+    fuel_multiplier: 1.0
+    strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
+    consume_from_all_strategies: false
+    valid:
+      - "minecraft:copper_block"
+      - "minecraft:exposed_copper"
+      - "minecraft:weathered_copper"
+      - "minecraft:oxidized_copper"
+      - "minecraft:waxed_copper_block"
+      - "minecraft:waxed_exposed_copper"
+      - "minecraft:waxed_weathered_copper"
+      - "minecraft:waxed_oxidized_copper"
+    apis: all
+
+  - name: iron
+    type: structure
+    max_size: 1000
+    fuel_multiplier: 1.0
+    strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
+    consume_from_all_strategies: false
+    valid: ["minecraft:iron_block"]
+    apis: all
+
+  - name: golden
+    type: structure
+    max_size: 1000
+    fuel_multiplier: 0.5
+    strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
+    consume_from_all_strategies: false
+    valid: ["minecraft:gold_block"]
+    apis: all
+
+  - name: item
+    type: item
+    fuel_multiplier: 1.0
+    strategies: ["economy_strategy", "durability_strategy"]
+    consume_from_all_strategies: true
+    valid: ["minecraft:netherite_pickaxe"]
+    apis: all
 
 # The secret key. Remove this to automatically generate a new one.
 # Keep it private, as it's used to sign api tokens.

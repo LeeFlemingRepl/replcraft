@@ -156,7 +156,9 @@ public class WebsocketServer {
                         if (!freeFuel && !context.useFuel(fuelCost)) {
                             String message = String.format(
                                 "out of fuel (cost: %s). available strategies: provide %s of %s.",
-                                fuelCost, ReplCraft.plugin.consume_from_all ? "ALL" : "ANY", context.getFuelSources()
+                                fuelCost,
+                                context.getStructure().material.consumeFromAll ? "ALL" : "ANY",
+                                context.getFuelSources()
                             );
                             throw new ApiError(ApiError.OUT_OF_FUEL, message);
                         }

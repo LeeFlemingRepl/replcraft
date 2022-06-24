@@ -1,13 +1,11 @@
 package eelfloat.replcraft.listeners;
 
-import com.sk89q.worldedit.event.platform.BlockInteractEvent;
 import eelfloat.replcraft.*;
 import eelfloat.replcraft.net.ClientV2;
 import eelfloat.replcraft.net.StructureContext;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
+import java.util.Optional;
 
 public class ToolListeners implements Listener {
     private void trigger(Player player, ItemStack stack, int x, int y, int z, int range, String reason) {
@@ -29,8 +28,8 @@ public class ToolListeners implements Listener {
         if (lore == null) return;
 
         ReplCraft.plugin.logger.info(String.format(
-                "trigger %s %s %s %s %s %s %s %s",
-                player.getName(), stack, x, y, z, range, reason, lore
+            "trigger %s %s %s %s %s %s %s %s",
+            player.getName(), stack, x, y, z, range, reason, lore
         ));
 
         lore.stream()
@@ -45,10 +44,17 @@ public class ToolListeners implements Listener {
                     });
             })
             .forEach(itemCtx -> {
-                Structure structure = new VirtualStructure(
+                Optional<StructureMaterial> material = ReplCraft.plugin.frame_materials.stream()
+                    .filter(mats -> (
+                        mats.validMaterials.stream().anyMatch(mat -> stack.getType() == mat) &&
+                        mats.type == StructureType.Item
+                    ))
+                    .findFirst();
+                if (!material.isPresent()) return;
+                Structure structure = new ItemVirtualStructure(
                     player,
                     stack,
-                    StructureMaterial.META_MATERIAL,
+                    material.get(),
                     null,
                     null,
                     itemCtx.getUsername(),
