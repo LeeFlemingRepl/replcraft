@@ -1,5 +1,6 @@
 package eelfloat.replcraft.net;
 
+import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.net.handlers.WebsocketActionHandler;
 import io.javalin.websocket.WsContext;

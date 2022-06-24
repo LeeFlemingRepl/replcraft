@@ -1,5 +1,6 @@
 package eelfloat.replcraft.util;
 
+import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.StructureMaterial;
@@ -55,7 +56,7 @@ public class StructureUtil {
             throw new InvalidStructure("Missing permissions for this sign. Does your username match line 4?");
         }
 
-        Structure structure = verifyStructure(block.getRelative(((WallSign) data).getFacing().getOppositeFace()));
+        PhysicalStructure structure = verifyStructure(block.getRelative(((WallSign) data).getFacing().getOppositeFace()));
         structure.sign = block;
         structure.replit_username = replit_username;
         structure.replit_repl_id = repl_id;
@@ -70,7 +71,7 @@ public class StructureUtil {
      * @throws InvalidStructure if the structure is invalid
      * @return a partially validated structure, missing its sign field
      */
-    public static Structure verifyStructure(Block starting_block) throws InvalidStructure {
+    public static PhysicalStructure verifyStructure(Block starting_block) throws InvalidStructure {
         // A list of all seen frame blocks, attached chests, and signs.
         HashSet<Location> seen = new HashSet<>();
         Stack<Location> to_explore = new Stack<>();
@@ -156,7 +157,7 @@ public class StructureUtil {
         check_axis(material, new Location(starting_block.getWorld(), max_x, min_y, min_z), -1, 0, 0, max_x - min_x); // 11
         check_axis(material, new Location(starting_block.getWorld(), min_x, min_y, min_z), 0, 0, 1, max_z - min_z); // 12
 
-        Structure structure = new Structure(
+        PhysicalStructure structure = new PhysicalStructure(
             material,
             null, null, null, null,
             null, seen, chests,

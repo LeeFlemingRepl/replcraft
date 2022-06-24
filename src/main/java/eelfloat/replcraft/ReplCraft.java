@@ -6,6 +6,7 @@ import eelfloat.replcraft.command.ReplizeToolExecutor;
 import eelfloat.replcraft.command.TransactExecutor;
 import eelfloat.replcraft.listeners.StructureInteractions;
 import eelfloat.replcraft.listeners.StructureUpdates;
+import eelfloat.replcraft.listeners.ToolListeners;
 import eelfloat.replcraft.net.StructureContext;
 import eelfloat.replcraft.net.WebsocketServer;
 import eelfloat.replcraft.permissions.DefaultPermissionProvider;
@@ -217,6 +218,7 @@ public final class ReplCraft extends JavaPlugin {
         logger.info("Hello, world!");
         getServer().getPluginManager().registerEvents(new StructureInteractions(), this);
         getServer().getPluginManager().registerEvents(new StructureUpdates(), this);
+        getServer().getPluginManager().registerEvents(new ToolListeners(), this);
         this.getCommand("transact").setExecutor(new TransactExecutor());
         this.getCommand("recipe").setExecutor(new RecipeExecutor());
         this.getCommand("token").setExecutor(new CreateTokenExecutor());

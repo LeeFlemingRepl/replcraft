@@ -34,7 +34,7 @@ public class Pay implements WebsocketActionHandler {
             throw new ApiError(ApiError.BAD_REQUEST, "This command requires Vault to be installed on the server.");
         }
 
-        String world = ctx.structureContext.getStructure().sign.getWorld().getName();
+        String world = ctx.structureContext.getStructure().getWorld().getName();
         OfflinePlayer sender = ctx.structureContext.getStructure().getPlayer();
         OfflinePlayer target = ApiUtil.getTargetPlayer(ctx.structureContext, ctx.request);
         double amount = ctx.request.getDouble("amount");

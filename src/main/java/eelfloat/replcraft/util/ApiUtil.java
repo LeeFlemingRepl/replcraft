@@ -5,6 +5,7 @@ import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
+import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
@@ -88,7 +89,7 @@ public class ApiUtil {
      * @return true if the flag is ALLOW
      */
     public static boolean checkFlagOnStructure(Structure structure, StateFlag flag) {
-        ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(structure.sign.getLocation()));
+        ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(structure.getPrimaryLocation()));
         return set.queryState(null, flag) == StateFlag.State.ALLOW;
     }
 

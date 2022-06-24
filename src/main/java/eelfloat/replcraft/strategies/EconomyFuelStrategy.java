@@ -21,7 +21,8 @@ public class EconomyFuelStrategy extends FuelStrategy {
         double price = fuel_price * fuel_amount;
         if (price > ReplCraft.plugin.economy.getBalance(player)) return 0;
 
-        EconomyResponse tx = ReplCraft.plugin.economy.withdrawPlayer(player, this.structureContext.getStructure().sign.getWorld().getName(), price);
+        String worldName = this.structureContext.getStructure().getWorld().getName();
+        EconomyResponse tx = ReplCraft.plugin.economy.withdrawPlayer(player, worldName, price);
         if (!tx.transactionSuccess()) return 0;
 
         return fuel_amount;

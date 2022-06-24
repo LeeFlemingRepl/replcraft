@@ -41,7 +41,7 @@ public class ReplizeToolExecutor implements CommandExecutor {
         claims.put("uuid", ((Player) sender).getUniqueId().toString());
         claims.put("username", sender.getName());
         claims.put("scope", "item");
-        claims.put("item", random);
+        claims.put("item", key.toString());
         String jws = Jwts.builder().setClaims(claims).signWith(ReplCraft.plugin.key).compact();
 
         ItemMeta itemMeta = stack.getItemMeta();

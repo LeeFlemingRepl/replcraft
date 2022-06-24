@@ -69,6 +69,7 @@ public class Authenticate implements WebsocketActionHandler {
                     StructureUtil.verifyTokenAsync(token, structure -> {
                         StructureContext structureContext = client.createContext(structure, token, CONTEXT_CAUSE_LOGIN);
                         ctx.response.put("context", structureContext.id);
+                        ctx.response.put("scope", "structure");
                         success.set(structureContext);
                     }, err -> {
                         error.set(err);
@@ -82,6 +83,7 @@ public class Authenticate implements WebsocketActionHandler {
 
                 case "item":
                     client.items.add(new ItemContext(client, claims));
+                    ctx.response.put("scope", "item");
                     otherSuccess.set(true);
                     break;
 

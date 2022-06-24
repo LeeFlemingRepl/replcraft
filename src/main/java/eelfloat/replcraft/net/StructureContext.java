@@ -1,5 +1,6 @@
 package eelfloat.replcraft.net;
 
+import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
@@ -166,7 +167,7 @@ public class StructureContext {
 
         HashSet<Location> locations = this.structure == null
             ? this.invalidated_structure_locations
-            : this.structure.frameBlocks;
+            : ((PhysicalStructure) this.structure).frameBlocks;
 
         for (BlockFace face: BlockFace.values()) {
             if (!face.isCartesian()) continue;
@@ -183,11 +184,17 @@ public class StructureContext {
                     },
                     err -> {
                         ReplCraft.plugin.logger.info(String.format("Revalidation failed: %s", err));
-                        if (this.structure != null) {
-                            this.invalidated_structure_locations = this.structure.frameBlocks;
-                            this.setStructure(null);
+                        if (this.client instanceof ClientV2) {
+                            // v2 clients just kill the context, the user will have to make a new one
+                            ((ClientV2) this.client).disposeContext(this.id);
+                        } else {
+                            // v1 clients can revalidate old contexts
+                            if (this.structure instanceof PhysicalStructure) {
+                                this.invalidated_structure_locations = ((PhysicalStructure) this.structure).frameBlocks;
+                                this.setStructure(null);
+                            }
+                            this.invalidated = true;
                         }
-                        this.invalidated = true;
                     }
                 );
             }

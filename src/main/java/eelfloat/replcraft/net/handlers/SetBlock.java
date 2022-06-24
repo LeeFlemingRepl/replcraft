@@ -1,6 +1,8 @@
 package eelfloat.replcraft.net.handlers;
 
+import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
+import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
@@ -35,7 +37,10 @@ public class SetBlock implements WebsocketActionHandler {
     @Override
     public double cost(RequestContext ctx) {
         double base = FuelCost.BlockChange.toDouble();
-        int chests = ctx.structureContext.getStructure().chests.size();
+        Structure structure = ctx.structureContext.getStructure();
+        int chests = structure instanceof PhysicalStructure
+            ? ((PhysicalStructure) structure).chests.size()
+            : 1;
         int minChests = ReplCraft.plugin.fuel_cost_per_structure_inventory_start;
         double perChest = ReplCraft.plugin.fuel_cost_per_structure_inventory;
         return base + Math.max(chests - minChests, 0) * perChest;
