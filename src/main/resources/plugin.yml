@@ -57,3 +57,4 @@ permissions:
   replcraft.api.respond: { default: true, description: "Allows use of the `respond` api call"}
   replcraft.api.tell: { default: true, description: "Allows use of the `tell` api call"}
   replcraft.api.pay: { default: true, description: "Allows use of the `pay` api call"}
+  replcraft.api.set_fuel_limit: { default: true, description: "Allows use of the `set_fuel_limit` api call"}

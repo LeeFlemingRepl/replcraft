@@ -2,11 +2,19 @@ package eelfloat.replcraft.strategies;
 
 import eelfloat.replcraft.net.StructureContext;
 
+import java.util.ArrayList;
+
 public abstract class FuelStrategy {
     /** The amount of fuel consumed during the last consume operation */
     private double lastConsumption = 0;
     /** The amount of spare fuel generated or returned to the strategy */
     protected double spareFuel = 0;
+    /** The name of the strategy as named in the config */
+    public final String configName;
+
+    protected FuelStrategy(String configName) {
+        this.configName = configName;
+    }
 
     public double getSpareFuel() {
         return spareFuel;
@@ -74,5 +82,33 @@ public abstract class FuelStrategy {
     /**
      * @return the unique, human-readable name of the fuel strategy
      */
-    public abstract String name();
+    public abstract String getType();
+
+    /**
+     * Estimates the amount of fuel available for generation
+     * @return fuel estimate
+     */
+    public abstract double getEstimatedFuelAvailable(StructureContext structureContext);
+
+    /**
+     * Does string formatting stuff to produce a user-friendly view of the strategy suitable for slapping into an error.
+     * @param limit the user-set fuel limit
+     * @param used how much fuel the strategy has provided so far
+     * @return the strategy formatted as a string
+     */
+    public String asStringWithData(double limit, double used) {
+        ArrayList<String> list = new ArrayList<>();
+        list.add(this.toString());
+        if (limit != Double.POSITIVE_INFINITY) {
+            list.add(String.format("used %s of user limit %s", used, limit));
+        } else {
+            list.add(String.format("used %s", used));
+        }
+
+        return String.format(
+            "%s { %s }",
+            this.getClass().getSimpleName(),
+            String.join(", ", list)
+        );
+    }
 }

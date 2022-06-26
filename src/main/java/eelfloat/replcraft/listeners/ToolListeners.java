@@ -80,8 +80,8 @@ public class ToolListeners implements Listener {
                 StructureContext context = itemCtx.client.createContext(structure, null, reason);
                 Bukkit.getScheduler().runTaskLater(ReplCraft.plugin, () -> {
                     ReplCraft.plugin.logger.info("Disposing context");
-                    itemCtx.client.disposeContext(context.id);
-                }, 20 * 10);
+                    itemCtx.client.disposeContext(context.id, "hit hard timeout threshold");
+                }, 10 * 60 * 20);
             });
     }
 

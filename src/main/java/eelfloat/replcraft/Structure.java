@@ -1,17 +1,15 @@
 package eelfloat.replcraft;
 
+import eelfloat.replcraft.net.StructureContext;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -201,6 +199,18 @@ public abstract class Structure {
             if (i != -1) return inventory.getItem(i);
         }
         return null;
+    }
+
+    public int countMaterial(Material mat) {
+        Iterator<Inventory> iter = this.getStructureInventory();
+        int count = 0;
+        while (iter.hasNext()) {
+            Inventory inventory = iter.next();
+            for (ItemStack content : inventory.getContents())
+                if (content.getType() == mat)
+                    count += content.getAmount();
+        }
+        return count;
     }
 
     /**

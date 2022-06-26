@@ -9,7 +9,8 @@ public class EconomyFuelStrategy extends FuelStrategy {
     private final StructureContext structureContext;
     private final double fuel_price;
 
-    public EconomyFuelStrategy(StructureContext structureContext, double fuel_price) {
+    public EconomyFuelStrategy(String configName, StructureContext structureContext, double fuel_price) {
+        super(configName);
         this.structureContext = structureContext;
         this.fuel_price = fuel_price;
     }
@@ -29,12 +30,18 @@ public class EconomyFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public String name() {
+    public double getEstimatedFuelAvailable(StructureContext structureContext) {
+        OfflinePlayer player = this.structureContext.getStructure().getPlayer();
+        return ReplCraft.plugin.economy.getBalance(player) / fuel_price;
+    }
+
+    @Override
+    public String getType() {
         return "economy";
     }
 
     @Override
     public String toString() {
-        return String.format("EconomyFuelStrategy { $%s per unit of fuel }", fuel_price);
+        return String.format("$%s per unit of fuel", fuel_price);
     }
 }

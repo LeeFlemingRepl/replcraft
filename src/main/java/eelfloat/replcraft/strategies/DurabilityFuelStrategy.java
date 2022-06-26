@@ -1,6 +1,5 @@
 package eelfloat.replcraft.strategies;
 
-import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.ItemVirtualStructure;
 import eelfloat.replcraft.net.StructureContext;
@@ -11,7 +10,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 public class DurabilityFuelStrategy extends FuelStrategy {
     private final double fuel_per_unit;
 
-    public DurabilityFuelStrategy(double fuel_per_unit) {
+    public DurabilityFuelStrategy(String configName, double fuel_per_unit) {
+        super(configName);
         this.fuel_per_unit = fuel_per_unit;
     }
 
@@ -21,7 +21,6 @@ public class DurabilityFuelStrategy extends FuelStrategy {
         if (!(structure instanceof ItemVirtualStructure)) return 0;
 
         ItemStack item = ((ItemVirtualStructure) structure).item;
-
         ItemMeta meta = item.getItemMeta();
         if (!(meta instanceof Damageable)) return 0;
 
@@ -35,12 +34,23 @@ public class DurabilityFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public String name() {
+    public double getEstimatedFuelAvailable(StructureContext structureContext) {
+        ItemStack item = ((ItemVirtualStructure) structureContext.getStructure()).item;
+        ItemMeta meta = item.getItemMeta();
+        if (!(meta instanceof Damageable)) return 0;
+
+        int maxDurability = item.getType().getMaxDurability();
+        int damage = ((Damageable) meta).getDamage();
+        return (maxDurability - damage) * fuel_per_unit;
+    }
+
+    @Override
+    public String getType() {
         return "durability";
     }
 
     @Override
     public String toString() {
-        return String.format("DurabilityFuelStrategy { %s fuel per durability point }", this.fuel_per_unit);
+        return String.format("%s fuel per durability point", this.fuel_per_unit);
     }
 }

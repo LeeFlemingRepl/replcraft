@@ -9,6 +9,7 @@ import eelfloat.replcraft.strategies.*;
 import eelfloat.replcraft.util.BoxedDoubleButActuallyUseful;
 import eelfloat.replcraft.util.ExpirableCacheMap;
 import eelfloat.replcraft.util.StructureUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -77,8 +78,23 @@ public class StructureContext {
     public List<String> getFuelSources() {
         return this.strategies.stream()
             .filter(strat -> !strat.isHidden())
-            .map(Object::toString)
+            .map(strat -> strat.asStringWithData(
+                this.getMaxFuel(strat.configName),
+                this.getRemainingFuel(strat.configName)
+            ))
             .collect(Collectors.toList());
+    }
+
+    private final HashMap<String, Double> fuelLimits = new HashMap<>();
+    private final HashMap<String, Double> usedFuel = new HashMap<>();
+    public double getRemainingFuel(String strategyName) {
+        return usedFuel.computeIfAbsent(strategyName, s -> 0d);
+    }
+    public double getMaxFuel(String strategyName) {
+        return fuelLimits.computeIfAbsent(strategyName, s -> Double.POSITIVE_INFINITY);
+    }
+    public void setMaxFuel(String strategyName, double maxFuel) {
+        fuelLimits.put(strategyName, maxFuel);
     }
 
     /**
@@ -99,7 +115,12 @@ public class StructureContext {
             }
         } else {
             for (FuelStrategy strategy: strategies) {
-                amount -= strategy.consume(amount, this);
+                double alreadyUsed = getRemainingFuel(strategy.configName);
+                double limit = getMaxFuel(strategy.configName);
+                double maxUsable = Math.min(amount, limit - alreadyUsed);
+                double providedAmount = strategy.consume(maxUsable, this);
+                usedFuel.put(strategy.configName, alreadyUsed + providedAmount);
+                amount -= providedAmount;
             }
             if (amount > tolerance) {
                 strategies.forEach(FuelStrategy::cancel_and_restore);
@@ -108,6 +129,22 @@ public class StructureContext {
         }
         strategies.forEach(FuelStrategy::commit);
         return true;
+    }
+
+    public void tick() {
+        this.pollOne();
+
+        double fuelPerTick = this.structure.material.fuelPerTick;
+        if (fuelPerTick > 0) {
+            boolean success = this.useFuel(fuelPerTick);
+            // Run later to avoid ConcurrentModificationException
+            Bukkit.getScheduler().runTask(ReplCraft.plugin, () -> {
+                if (!success && this.client instanceof ClientV2) {
+                    String cause = "out of fuel when processing fuel per tick cost";
+                    ((ClientV2) this.client).disposeContext(this.id, cause);
+                }
+            });
+        }
     }
 
     public enum QueryStatus { Success, TimedOut }
@@ -185,7 +222,7 @@ public class StructureContext {
                         ReplCraft.plugin.logger.info(String.format("Revalidation failed: %s", err));
                         if (this.client instanceof ClientV2) {
                             // v2 clients just kill the context, the user will have to make a new one
-                            ((ClientV2) this.client).disposeContext(this.id);
+                            ((ClientV2) this.client).disposeContext(this.id, "structure invalidated");
                         } else {
                             // v1 clients can revalidate old contexts
                             if (this.structure instanceof PhysicalStructure) {

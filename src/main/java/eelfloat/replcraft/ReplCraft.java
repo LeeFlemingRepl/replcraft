@@ -136,7 +136,7 @@ public final class ReplCraft extends JavaPlugin {
         cost_per_expensive_api_call = config.getDouble("fuel.cost_per_expensive_api_call");
         cost_per_block_change_api_call = config.getDouble("fuel.cost_per_block_change_api_call");
 
-        strategies.put("leftover", ctx -> new LeftoverFuelStrategy());
+        strategies.put("leftover", ctx -> new LeftoverFuelStrategy("leftover"));
         ConfigurationSection strats = config.getConfigurationSection("fuel.strategies");
         for (String key: strats.getKeys(false)) {
             ConfigurationSection strat = strats.getConfigurationSection(key);
@@ -148,9 +148,9 @@ public final class ReplCraft extends JavaPlugin {
                     double max_fuel = strat.getDouble("max_fuel");
                     boolean shared = strat.getBoolean("shared");
                     logger.info("Creating new " + (shared ? "shared" : "independent") + " ratelimit strategies");
-                    RatelimitFuelStrategy sharedStrat = new RatelimitFuelStrategy(fuel_per_sec, max_fuel);
+                    RatelimitFuelStrategy sharedStrat = new RatelimitFuelStrategy(key, fuel_per_sec, max_fuel);
                     stratProvider = !shared
-                        ? ctx -> new RatelimitFuelStrategy(fuel_per_sec, max_fuel)
+                        ? ctx -> new RatelimitFuelStrategy(key, fuel_per_sec, max_fuel)
                         : ctx -> sharedStrat;
                     break;
 
@@ -161,19 +161,19 @@ public final class ReplCraft extends JavaPlugin {
                         throw new RuntimeException(String.format("fuel.strategies.%s.item: invalid material", key));
                     }
                     double fuel = strat.getDouble("fuel.item_strategy.fuel_provided");
-                    stratProvider = ctx -> new ItemFuelStrategy(ctx, material, fuel);
+                    stratProvider = ctx -> new ItemFuelStrategy(key, ctx, material, fuel);
                     break;
 
                 case "economy":
                     double fuel_price = strat.getDouble("fuel_price");
                     if (vault == null) throw new RuntimeException("Vault API not found, install or disable economy_strategy.");
                     if (rspe == null) throw new RuntimeException("Economy API provider not found, install one or disable economy_strategy.");
-                    stratProvider = client -> new EconomyFuelStrategy(client, fuel_price);
+                    stratProvider = client -> new EconomyFuelStrategy(key, client, fuel_price);
                     break;
 
                 case "durability":
                     double fuel_per_unit = strat.getDouble("fuel_per_unit");
-                    stratProvider = client -> new DurabilityFuelStrategy(fuel_per_unit);
+                    stratProvider = client -> new DurabilityFuelStrategy(key, fuel_per_unit);
                     break;
 
                 default: throw new RuntimeException(String.format("fuel.strategies.%s.type: unknown type", key));
@@ -191,6 +191,7 @@ public final class ReplCraft extends JavaPlugin {
 
             int maxSize = type == StructureType.Structure ? ((Number) structureType.get("max_size")).intValue() : 0;
             double fuelMultiplier = ((Number) structureType.get("fuel_multiplier")).doubleValue();
+            double fuelPerTick = ((Number) structureType.get("fuel_per_tick")).doubleValue();
             boolean consumeFromAll = (Boolean) structureType.get("consume_from_all_strategies");
 
             //noinspection unchecked
@@ -227,7 +228,7 @@ public final class ReplCraft extends JavaPlugin {
                 .collect(Collectors.toSet());
 
             frame_materials.add(new StructureMaterial(
-                name, type, maxSize, fuelMultiplier, valid, apis, applicableStrategies, consumeFromAll
+                name, type, maxSize, fuelMultiplier, fuelPerTick, valid, apis, applicableStrategies, consumeFromAll
             ));
         }
 
@@ -266,7 +267,9 @@ public final class ReplCraft extends JavaPlugin {
         this.getCommand("dereplize").setExecutor(new DereplizeToolExecutor());
         //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
-            websocketServer.clients.values().forEach(wss -> wss.getContexts().forEach(StructureContext::pollOne));
+            websocketServer.clients.values().forEach(wss -> {
+                wss.getContexts().forEach(StructureContext::tick);
+            });
         }, 0, 1);
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(client -> {

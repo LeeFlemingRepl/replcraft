@@ -52,11 +52,12 @@ public class ClientV2 extends Client {
         return this.contexts.values();
     }
 
-    public void disposeContext(long id) {
+    public void disposeContext(long id, String cause) {
         StructureContext removed = this.contexts.remove(id);
         if (removed != null) {
             JSONObject json = new JSONObject();
             json.put("type", "contextClosed");
+            json.put("cause", cause);
             json.put("id", id);
             this.send(removed, json);
         }
@@ -65,6 +66,6 @@ public class ClientV2 extends Client {
     @Override
     public void dispose() {
         for (StructureContext ctx: this.getContexts())
-            this.disposeContext(ctx.id);
+            this.disposeContext(ctx.id, "connection closed");
     }
 }

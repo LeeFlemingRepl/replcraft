@@ -88,6 +88,9 @@ materials:
     max_size: 25
     # The fuel multiplier for all API calls made with this structure type
     fuel_multiplier: 1.0
+    # How much fuel the connection costs to keep open per tick.
+    # If a V2 client runs out of fuel, the context will be disposed.
+    fuel_per_tick: 0.0
     # The fuel strategies this type of structure is allowed to use. Order matters!
     # "leftover" is a special strategy that collects spare fuel from expired structure contexts
     # (e.g. unused items) into a player-global pool that other structures can recycle.
@@ -115,6 +118,7 @@ materials:
     type: structure
     max_size: 100
     fuel_multiplier: 1.0
+    fuel_per_tick: 0.0
     strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
     consume_from_all_strategies: false
     valid:
@@ -132,6 +136,7 @@ materials:
     type: structure
     max_size: 1000
     fuel_multiplier: 1.0
+    fuel_per_tick: 0.0
     strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
     consume_from_all_strategies: false
     valid: ["minecraft:iron_block"]
@@ -141,6 +146,7 @@ materials:
     type: structure
     max_size: 1000
     fuel_multiplier: 0.5
+    fuel_per_tick: 0.0
     strategies: ["ratelimit_strategy", "leftover", "item_strategy"]
     consume_from_all_strategies: false
     valid: ["minecraft:gold_block"]
@@ -149,6 +155,7 @@ materials:
   - name: item
     type: item
     fuel_multiplier: 1.0
+    fuel_per_tick: 5.0
     strategies: ["durability_strategy"]
     consume_from_all_strategies: false
     valid: ["minecraft:netherite_pickaxe"]

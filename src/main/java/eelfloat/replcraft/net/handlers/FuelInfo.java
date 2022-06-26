@@ -75,11 +75,18 @@ public class FuelInfo implements WebsocketActionHandler {
             if (strategy instanceof RatelimitFuelStrategy)
                 ((RatelimitFuelStrategy) strategy).updateSpareFuelNow();
             JSONObject strategyJson = new JSONObject();
-            strategyJson.put("strategy", strategy.name());
+            strategyJson.put("name", strategy.configName);
+            strategyJson.put("strategy", strategy.getType());
             strategyJson.put("spareFuel", strategy.getSpareFuel());
+            double userLimit = ctx.structureContext.getMaxFuel(strategy.configName);
+            strategyJson.put("userLimit", userLimit == Double.POSITIVE_INFINITY ? -1 : userLimit);
+            strategyJson.put("totalUsed", ctx.structureContext.getRemainingFuel(strategy.configName));
+            strategyJson.put("generatableEstimate", strategy.getEstimatedFuelAvailable(ctx.structureContext));
             strategies.put(strategyJson);
         }
         ctx.response.put("strategies", strategies);
+
+        ctx.response.put("fuelPerTick", ctx.structureContext.getStructure().material.fuelPerTick);
         return null;
     }
 }

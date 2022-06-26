@@ -7,7 +7,8 @@ public class RatelimitFuelStrategy extends FuelStrategy {
     private final double fuel_per_sec;
     private final double max_fuel;
 
-    public RatelimitFuelStrategy(double fuel_per_sec, double max_fuel) {
+    public RatelimitFuelStrategy(String configName, double fuel_per_sec, double max_fuel) {
+        super(configName);
         this.fuel_per_sec = fuel_per_sec;
         this.max_fuel = max_fuel;
         this.spareFuel = max_fuel;
@@ -32,12 +33,18 @@ public class RatelimitFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public String name() {
+    public String getType() {
         return "ratelimit";
     }
 
     @Override
+    public double getEstimatedFuelAvailable(StructureContext structureContext) {
+        this.updateSpareFuelNow();
+        return 0;
+    }
+
+    @Override
     public String toString() {
-        return String.format("RatelimitStrategy { %s fuel per second (max %s) }", fuel_per_sec, max_fuel);
+        return String.format("%s fuel per second (max %s)", fuel_per_sec, max_fuel);
     }
 }

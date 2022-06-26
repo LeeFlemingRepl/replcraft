@@ -48,6 +48,8 @@ public class WebsocketServer {
         this.register(new Tell());
         this.register(new Pay());
         this.register(new FuelInfo());
+        this.register(new SetFuelLimit());
+        this.register(new Close());
 
         app = Javalin.create();
         app.get("/", ctx -> ctx.result("Running ReplCraft v" + ReplCraft.plugin.getDescription().getVersion()));

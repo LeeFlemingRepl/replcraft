@@ -9,7 +9,8 @@ public class ItemFuelStrategy extends FuelStrategy {
     private final Material material;
     private final double fuel_per_item;
 
-    public ItemFuelStrategy(StructureContext structureContext, Material material, double fuel_per_item) {
+    public ItemFuelStrategy(String configName, StructureContext structureContext, Material material, double fuel_per_item) {
+        super(configName);
         this.structureContext = structureContext;
         this.material = material;
         this.fuel_per_item = fuel_per_item;
@@ -28,12 +29,18 @@ public class ItemFuelStrategy extends FuelStrategy {
     }
 
     @Override
-    public String name() {
+    public double getEstimatedFuelAvailable(StructureContext structureContext) {
+        int count = this.structureContext.getStructure().countMaterial(this.material);
+        return count * fuel_per_item;
+    }
+
+    @Override
+    public String getType() {
         return "item";
     }
 
     @Override
     public String toString() {
-        return String.format("ItemFuelStrategy { %s fuel per %s }", fuel_per_item, material);
+        return String.format("%s fuel per %s", fuel_per_item, material);
     }
 }

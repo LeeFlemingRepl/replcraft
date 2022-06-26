@@ -60,4 +60,5 @@ public class PhysicalStructure extends Structure {
     public Location getPrimaryLocation() {
         return sign.getLocation();
     }
+
 }
