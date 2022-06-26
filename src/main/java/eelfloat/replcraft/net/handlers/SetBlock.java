@@ -98,6 +98,10 @@ public class SetBlock implements WebsocketActionHandler {
                 }
             }
 
+            if (target.getType().getHardness() == Material.BEDROCK.getHardness()) {
+                throw new ApiError(ApiError.INVALID_OPERATION, "cannot break unbreakable block");
+            }
+
             Location location = target.getLocation();
             Collection<ItemStack> drops = target.getDrops();
             BlockState state = target.getState();
