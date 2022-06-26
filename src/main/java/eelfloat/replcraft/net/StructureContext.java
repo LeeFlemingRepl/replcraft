@@ -1,5 +1,6 @@
 package eelfloat.replcraft.net;
 
+import eelfloat.replcraft.ItemVirtualStructure;
 import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
@@ -135,6 +136,9 @@ public class StructureContext {
         this.pollOne();
 
         double fuelPerTick = this.structure.material.fuelPerTick;
+        if (this.structure instanceof ItemVirtualStructure) {
+            fuelPerTick *= ((ItemVirtualStructure) this.structure).getEnchantFuelPerTickMultiplier();
+        }
         if (fuelPerTick > 0) {
             boolean success = this.useFuel(fuelPerTick);
             // Run later to avoid ConcurrentModificationException

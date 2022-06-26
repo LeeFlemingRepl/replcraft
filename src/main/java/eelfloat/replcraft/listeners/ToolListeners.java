@@ -26,10 +26,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class ToolListeners implements Listener {
-    private void trigger(Player player, ItemStack stack, int x, int y, int z, int range, String reason) {
+    private void trigger(Player player, ItemStack stack, int x, int y, int z, String reason) {
         ItemMeta itemMeta = stack.getItemMeta();
         if (itemMeta == null) return;
 
@@ -38,7 +37,7 @@ public class ToolListeners implements Listener {
 
         ReplCraft.plugin.logger.info(String.format(
             "trigger %s %s %s %s %s %s %s %s",
-            player.getName(), stack, x, y, z, range, reason, lore
+            player.getName(), stack, x, y, z, 5, reason, lore
         ));
 
         lore.stream()
@@ -69,12 +68,9 @@ public class ToolListeners implements Listener {
                     itemCtx.getUsername(),
                     itemCtx.getUUID(),
                     player.getWorld(),
-                    x - range,
-                    y - range,
-                    z - range,
-                    x + range,
-                    y + range,
-                    z + range
+                    x,
+                    y,
+                    z
                 );
                 ReplCraft.plugin.logger.info("Creating context");
                 StructureContext context = itemCtx.client.createContext(structure, null, reason);
@@ -143,7 +139,7 @@ public class ToolListeners implements Listener {
         Player player = (Player) evt.getDamager();
         ItemStack stack = player.getInventory().getItemInMainHand();
         Location location = evt.getEntity().getLocation();
-        trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), 5, "itemAttack");
+        trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemAttack");
     }
 
     @EventHandler
@@ -151,7 +147,7 @@ public class ToolListeners implements Listener {
         Player player = evt.getPlayer();
         ItemStack stack = player.getInventory().getItemInMainHand();
         Block block = evt.getBlock();
-        trigger(player, stack, block.getX(), block.getY(), block.getZ(), 5, "itemBreakBlock");
+        trigger(player, stack, block.getX(), block.getY(), block.getZ(), "itemBreakBlock");
     }
 
     @EventHandler
@@ -160,11 +156,11 @@ public class ToolListeners implements Listener {
         ItemStack stack = player.getInventory().getItemInMainHand();
         if (evt.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Block block = evt.getClickedBlock();
-            trigger(player, stack, block.getX(), block.getY(), block.getZ(), 5, "itemInteractBlock");
+            trigger(player, stack, block.getX(), block.getY(), block.getZ(), "itemInteractBlock");
         }
         if (evt.getAction() == Action.RIGHT_CLICK_AIR) {
             Location location = player.getLocation();
-            trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), 5, "itemInteractAir");
+            trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemInteractAir");
         }
     }
 }
