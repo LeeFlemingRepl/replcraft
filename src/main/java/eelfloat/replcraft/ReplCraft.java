@@ -1,9 +1,6 @@
 package eelfloat.replcraft;
 
-import eelfloat.replcraft.command.CreateTokenExecutor;
-import eelfloat.replcraft.command.RecipeExecutor;
-import eelfloat.replcraft.command.ReplizeToolExecutor;
-import eelfloat.replcraft.command.TransactExecutor;
+import eelfloat.replcraft.command.*;
 import eelfloat.replcraft.listeners.StructureInteractions;
 import eelfloat.replcraft.listeners.StructureUpdates;
 import eelfloat.replcraft.listeners.ToolListeners;
@@ -57,6 +54,7 @@ public final class ReplCraft extends JavaPlugin {
 
     public boolean creative_mode;
     public boolean anti_xray;
+    public double replizePrice;
 
     public double cost_per_api_call;
     public double cost_per_expensive_api_call;
@@ -107,7 +105,6 @@ public final class ReplCraft extends JavaPlugin {
         Thread.currentThread().setContextClassLoader(ReplCraft.class.getClassLoader());
         websocketServer = new WebsocketServer();
         Thread.currentThread().setContextClassLoader(classLoader);
-
 
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");
         RegisteredServiceProvider<Economy> rspe = getServer().getServicesManager().getRegistration(Economy.class);
@@ -234,6 +231,11 @@ public final class ReplCraft extends JavaPlugin {
             ));
         }
 
+        replizePrice = config.getDouble("replize_price");
+        if (replizePrice > 0 && (vault == null || rspe == null)) {
+            throw new RuntimeException("No Vault or compatible economy plugin installed, install or set replize_price to 0");
+        }
+
         permissionProvider = new DefaultPermissionProvider();
         if (config.getBoolean("protection.permissions_vault")) {
             if (vault == null) throw new RuntimeException("Vault API not found, install or disable permissions_vault.");
@@ -261,6 +263,7 @@ public final class ReplCraft extends JavaPlugin {
         this.getCommand("recipe").setExecutor(new RecipeExecutor());
         this.getCommand("token").setExecutor(new CreateTokenExecutor());
         this.getCommand("replize").setExecutor(new ReplizeToolExecutor());
+        this.getCommand("dereplize").setExecutor(new DereplizeToolExecutor());
         //noinspection CodeBlock2Expr
         getServer().getScheduler().runTaskTimer(plugin, () -> {
             websocketServer.clients.values().forEach(wss -> wss.getContexts().forEach(StructureContext::pollOne));

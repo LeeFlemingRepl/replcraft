@@ -22,6 +22,10 @@ commands:
     description: Acquires a token for the tool you're currently holding
     usage: /replize
     permission: replcraft.command.replize
+  dereplize:
+    description: Removes replize authorization for a tool you're currently holding
+    usage: /dereplize
+    permission: replcraft.command.replize
 
 permissions:
   replcraft.command.transact: { default: true, description: "Allows use of the /transact command" }

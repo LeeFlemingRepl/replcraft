@@ -14,6 +14,9 @@ creative_mode: false
 # They'll appear as `replcraft:obfuscated_stone` (or deepslate/netherrack as appropriate)
 anti_xray: true
 
+# How much `/replize` costs per unit of durability
+replize_price: 0
+
 protection:
   # Uses Vault to obtain permissions for OfflinePlayers
   # Warning: disabling this requires the player to be online. API requests will throw errors otherwise.
@@ -146,8 +149,8 @@ materials:
   - name: item
     type: item
     fuel_multiplier: 1.0
-    strategies: ["economy_strategy", "durability_strategy"]
-    consume_from_all_strategies: true
+    strategies: ["durability_strategy"]
+    consume_from_all_strategies: false
     valid: ["minecraft:netherite_pickaxe"]
     apis: all
 

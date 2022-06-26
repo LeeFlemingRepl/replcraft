@@ -3,18 +3,24 @@ package eelfloat.replcraft.listeners;
 import eelfloat.replcraft.*;
 import eelfloat.replcraft.net.ClientV2;
 import eelfloat.replcraft.net.StructureContext;
+import eelfloat.replcraft.util.ReplizedTool;
+import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerItemMendEvent;
+import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -82,23 +88,8 @@ public class ToolListeners implements Listener {
     @EventHandler
     public void onPlayerHoldReplizedItem(PlayerItemHeldEvent event) {
         ItemStack item = event.getPlayer().getInventory().getItem(event.getNewSlot());
-        if (item == null) return;
-
-        ItemMeta itemMeta = item.getItemMeta();
-        if (itemMeta == null) return;
-
-        List<String> lore = itemMeta.getLore();
-        if (lore == null) return;
-
-        for (String str: lore) {
-            if (!str.startsWith("Replized:")) continue;
-
-            String[] split = str.split(" ");
-            if (split.length < 3) continue;
-
-            UUID uuid = UUID.fromString(split[2]);
-            if (uuid.equals(event.getPlayer().getUniqueId())) continue;
-
+        ReplizedTool tool = ReplizedTool.parse(item);
+        if (tool != null && !tool.playerUUID.equals(event.getPlayer().getUniqueId())) {
             event.getPlayer().sendMessage(String.format(
                 "%sWarning: This is a replized tool owned by %s%s%s%s%s. It can interact with your " +
                 "surroundings and inventory if used. Only use the tool if you trust its author. This " +
@@ -106,11 +97,44 @@ public class ToolListeners implements Listener {
                 ChatColor.GOLD,
                 ChatColor.RED,
                 ChatColor.BOLD,
-                Bukkit.getServer().getOfflinePlayer(uuid).getName(),
+                Bukkit.getServer().getOfflinePlayer(tool.playerUUID).getName(),
                 ChatColor.RESET,
                 ChatColor.GOLD
             ));
         }
+    }
+
+    @EventHandler
+    public void onItemMendEvent(PlayerItemMendEvent evt) {
+        if (ReplizedTool.parse(evt.getItem()) == null || ReplCraft.plugin.replizePrice == 0) return;
+        String world = evt.getExperienceOrb().getWorld().getName();
+        double price = evt.getRepairAmount() * ReplCraft.plugin.replizePrice;
+        EconomyResponse tx = ReplCraft.plugin.economy.withdrawPlayer(evt.getPlayer(), world, price);
+        if (tx.transactionSuccess()) {
+            evt.getPlayer().sendMessage(String.format(
+                "%sYou have been charged %s$%s%s for replized tool mending",
+                ChatColor.DARK_GREEN,
+                ChatColor.GOLD,
+                price,
+                ChatColor.DARK_GREEN
+            ));
+        } else {
+            evt.getPlayer().sendMessage(String.format(
+                "%sInsufficient funds to pay for replized tool mending",
+                ChatColor.RED
+            ));
+            evt.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onAnvilEvent(PrepareAnvilEvent evt) {
+        AnvilInventory inventory = evt.getInventory();
+        if (ReplizedTool.parse(inventory.getItem(0)) == null)
+            return;
+        for (HumanEntity viewer: evt.getViewers())
+            viewer.sendMessage("Replized tools cannot be modified normally in an anvil. `/dereplize` them first.");
+        inventory.setMaximumRepairCost(0);
     }
 
     @EventHandler
