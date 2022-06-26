@@ -10,6 +10,10 @@ listen_port: 28080
 # May also be used for other APIs in the future (e.g. being able to spawn arbitrary items)
 creative_mode: false
 
+# Hides ores from setBlock, preventing them from being cheaply stripped
+# They'll appear as `replcraft:obfuscated_stone` (or deepslate/netherrack as appropriate)
+anti_xray: true
+
 protection:
   # Uses Vault to obtain permissions for OfflinePlayers
   # Warning: disabling this requires the player to be online. API requests will throw errors otherwise.

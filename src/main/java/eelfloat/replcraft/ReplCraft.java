@@ -56,6 +56,7 @@ public final class ReplCraft extends JavaPlugin {
     public boolean core_protect;
 
     public boolean creative_mode;
+    public boolean anti_xray;
 
     public double cost_per_api_call;
     public double cost_per_expensive_api_call;
@@ -99,6 +100,7 @@ public final class ReplCraft extends JavaPlugin {
         listen_port = config.getInt("listen_port");
 
         creative_mode = config.getBoolean("creative_mode");
+        anti_xray = config.getBoolean("anti_xray");
 
         // https://gist.github.com/RezzedUp/d7957af10bfbfc6837ae1a4b55975f40
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
