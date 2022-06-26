@@ -62,7 +62,7 @@ public class ReplizeToolExecutor implements CommandExecutor {
         List<String> lore = itemMeta.getLore();
         if (lore == null) lore = new ArrayList<>();
         lore.removeIf(str -> str.startsWith("Replized: "));
-        lore.add("Replized: " + key);
+        lore.add("Replized: " + key + " " + ((Player) sender).getUniqueId().toString());
         itemMeta.setLore(lore);
         stack.setItemMeta(itemMeta);
 
