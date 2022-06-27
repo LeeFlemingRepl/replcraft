@@ -5,10 +5,10 @@ import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
-import eelfloat.replcraft.PhysicalStructure;
 import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.exceptions.ApiError;
+import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.net.StructureContext;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.ClaimPermission;
@@ -25,7 +25,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.json.JSONObject;
 
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,7 +100,7 @@ public class ApiUtil {
      * @throws ApiError if any disallowed block states are present
      */
     public static void validateBlockData(String block) throws ApiError {
-        Matcher matcher = blockStates.matcher(block);
+        Matcher matcher = blockStates.matcher(block.replaceAll(",", "]["));
         while (matcher.find()) {
             String name = matcher.group(1);
             switch (name) {
@@ -151,6 +152,53 @@ public class ApiUtil {
             case LAVA: return Material.LAVA_BUCKET;
             case WATER: return Material.WATER_BUCKET;
             default:           return material;
+        }
+    }
+
+    public static VirtualInventory getInventory(
+        RequestContext ctx,
+        Function<String, String> keyRemapper,
+        boolean fallbackToStructureInventory
+    ) throws ApiError {
+        return getInventory(ctx.structureContext, ctx.request, keyRemapper, fallbackToStructureInventory);
+    }
+
+    /**
+     * Retrieves a virtual inventory for the reference given in the request.
+     * The reference takes the form of `{ x: number, y: number, z: number }` or `{ structure: true }`.
+     * @param structureContext the structure context making this request
+     * @param request the request containing the reference
+     * @param keyRemapper renames keys accessed from the request object (e.g. x -> target_x)
+     * @param fallbackToStructureInventory if the structure inventory should be used if neither form of the reference
+     *                                     is present.
+     * @return a virtual inventory matching the reference
+     * @throws ApiError if something goes wrong
+     */
+    public static VirtualInventory getInventory(
+        StructureContext structureContext,
+        JSONObject request,
+        Function<String, String> keyRemapper,
+        boolean fallbackToStructureInventory
+    ) throws ApiError {
+        if (request.has(keyRemapper.apply("structure")) && request.getBoolean(keyRemapper.apply("structure"))) {
+            return structureContext.getStructure().getStructureInventory();
+        } else if (request.has(keyRemapper.apply("x"))) {
+            BlockState state = getBlock(
+                structureContext,
+                request,
+                keyRemapper.apply("x"),
+                keyRemapper.apply("y"),
+                keyRemapper.apply("z")
+            ).getState();
+            if (!(state instanceof Container)) {
+                throw new ApiError(ApiError.INVALID_OPERATION, "block isn't a container");
+            }
+            InventoryReference ref = new InventoryReference((Container) state);
+            return new VirtualInventory(ref);
+        } else if (fallbackToStructureInventory) {
+            return structureContext.getStructure().getStructureInventory();
+        } else {
+            throw new ApiError(ApiError.BAD_REQUEST, "no container specified");
         }
     }
 

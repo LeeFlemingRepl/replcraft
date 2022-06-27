@@ -6,6 +6,7 @@ import eelfloat.replcraft.Structure;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
+import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,12 +18,12 @@ import org.bukkit.block.Container;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collection;
+import java.util.Optional;
 
-    
+
 public class SetBlock implements WebsocketActionHandler {
     @Override
     public String route() {
@@ -57,33 +58,25 @@ public class SetBlock implements WebsocketActionHandler {
             String blockDataString = ctx.request.getString("blockData");
             ApiUtil.validateBlockData(blockDataString);
 
-            Inventory source = !ctx.request.isNull("source_x")
-                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request, "source_x", "source_y", "source_z"), "source")
-                : null;
-            Inventory destination = !ctx.request.isNull("target_x")
-                ? ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request, "target_x", "target_y", "target_z"), "destination")
-                : null;
+            VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, true);
+            VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, true);
 
             BlockData blockData = ReplCraft.plugin.getServer().createBlockData(blockDataString);
             Material material = ApiUtil.remapBlockMaterialToItemMaterial(blockData.getMaterial());
 
             if (material != Material.AIR && !ReplCraft.plugin.creative_mode) {
-                ItemStack stack = null;
-                if (source != null) {
-                    int i = source.first(material);
-                    if (i != -1) stack = source.getItem(i);
-                } else {
-                    stack = ctx.structureContext.getStructure().findMaterial(material);
-                }
-                if (stack == null) {
+                Optional<ItemStack> stack = source.stream()
+                    .filter(item -> item.getType() == material && item.getAmount() >= 1)
+                    .findFirst();
+                if (!stack.isPresent()) {
                     String message = "No " + material + " available in any attached chests.";
                     throw new ApiError(ApiError.INVALID_OPERATION, message);
                 }
-                stack.setAmount(stack.getAmount() - 1);
+                stack.get().setAmount(stack.get().getAmount() - 1);
             }
 
-            Block target = ApiUtil.getBlock(ctx.structureContext, ctx.request);
-            ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, target.getLocation());
+            Block targetBlock = ApiUtil.getBlock(ctx.structureContext, ctx.request);
+            ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, targetBlock.getLocation());
 
             if (ReplCraft.plugin.block_protection) {
                 // Simulate breaking the block to see if GriefPrevention et al. would deny it
@@ -91,20 +84,20 @@ public class SetBlock implements WebsocketActionHandler {
                 if (!(offlinePlayer instanceof Player)) {
                     throw ApiError.OFFLINE;
                 }
-                BlockBreakEvent evt = new BlockBreakEvent(target, (Player) offlinePlayer);
+                BlockBreakEvent evt = new BlockBreakEvent(targetBlock, (Player) offlinePlayer);
                 Bukkit.getPluginManager().callEvent(evt);
                 if (evt.isCancelled()) {
                     throw new ApiError(ApiError.BAD_REQUEST, "block break event was cancelled by another plugin");
                 }
             }
 
-            if (target.getType().getHardness() == Material.BEDROCK.getHardness()) {
+            if (targetBlock.getType().getHardness() == Material.BEDROCK.getHardness()) {
                 throw new ApiError(ApiError.INVALID_OPERATION, "cannot break unbreakable block");
             }
 
-            Location location = target.getLocation();
-            Collection<ItemStack> drops = target.getDrops();
-            BlockState state = target.getState();
+            Location location = targetBlock.getLocation();
+            Collection<ItemStack> drops = targetBlock.getDrops();
+            BlockState state = targetBlock.getState();
             if (state instanceof Container) {
                 for (ItemStack stack: ((Container) state).getInventory().getContents()) {
                     if (stack == null) continue;
@@ -118,7 +111,7 @@ public class SetBlock implements WebsocketActionHandler {
 
             // Force physics updates around this block, to prevent floating-air farms
             for (BlockFace face: BlockFace.values()) {
-                BlockState nState = target.getRelative(face).getState();
+                BlockState nState = targetBlock.getRelative(face).getState();
                 if (nState.getType() == Material.AIR) {
                     nState.setType(Material.COBBLESTONE);
                     nState.update(true, true);
@@ -129,15 +122,12 @@ public class SetBlock implements WebsocketActionHandler {
 
             if (ReplCraft.plugin.core_protect) {
                 String player = ctx.structureContext.getStructure().getPlayer().getName();
-                ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", target.getLocation(), material, blockData);
+                ReplCraft.plugin.coreProtect.logPlacement(player + " [API]", targetBlock.getLocation(), material, blockData);
             }
 
-            for (ItemStack drop: drops) {
-                ItemStack leftover = destination != null
-                    ? destination.addItem(drop).values().stream().findFirst().orElse(null)
-                    : ctx.structureContext.getStructure().deposit(drop);
-                if (leftover != null) target.getWorld().dropItemNaturally(location, leftover);
-            }
+            ItemStack[] leftovers = target.deposit(drops.toArray(new ItemStack[0]));
+            for (ItemStack leftover: leftovers)
+                targetBlock.getWorld().dropItemNaturally(location, leftover);
         } catch (IllegalArgumentException ex) {
             ex.printStackTrace();
             throw new ApiError(ApiError.BAD_REQUEST, ex.toString());

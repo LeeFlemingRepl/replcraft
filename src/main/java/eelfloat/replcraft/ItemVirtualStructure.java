@@ -1,15 +1,14 @@
 package eelfloat.replcraft;
 
+import eelfloat.replcraft.util.InventoryReference;
+import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.UUID;
 
 public class ItemVirtualStructure extends Structure {
@@ -64,8 +63,8 @@ public class ItemVirtualStructure extends Structure {
     }
 
     @Override
-    public Iterator<Inventory> getStructureInventory() {
-        return Collections.singleton((Inventory) player.getInventory()).iterator();
+    public VirtualInventory getStructureInventory() {
+        return new VirtualInventory(new InventoryReference(player));
     }
 
     @Override

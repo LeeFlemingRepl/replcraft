@@ -30,7 +30,11 @@ public class ItemFuelStrategy extends FuelStrategy {
 
     @Override
     public double getEstimatedFuelAvailable(StructureContext structureContext) {
-        int count = this.structureContext.getStructure().countMaterial(this.material);
+        long count = this.structureContext.getStructure()
+            .getStructureInventory()
+            .stream()
+            .filter(el -> el.getType() == this.material)
+            .count();
         return count * fuel_per_item;
     }
 

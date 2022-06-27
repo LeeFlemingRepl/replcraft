@@ -1,15 +1,14 @@
 package eelfloat.replcraft;
 
-import eelfloat.replcraft.net.StructureContext;
+import eelfloat.replcraft.util.InventoryReference;
+import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -183,7 +182,9 @@ public abstract class Structure {
         return this.world.getBlockAt(x + inner_min_x(), y + inner_min_y(), z + inner_min_z());
     }
 
-    public abstract Iterator<Inventory> getStructureInventory();
+
+
+    public abstract VirtualInventory getStructureInventory();
 
     /**
      * Obtains an ItemStack by material type in any of the structure's connected chests
@@ -192,40 +193,11 @@ public abstract class Structure {
      * @return a matching item stack, or null
      */
     public ItemStack findMaterial(Material mat) {
-        Iterator<Inventory> iter = this.getStructureInventory();
-        while (iter.hasNext()) {
-            Inventory inventory = iter.next();
-            int i = inventory.first(mat);
-            if (i != -1) return inventory.getItem(i);
+        for (InventoryReference ref: this.getStructureInventory().inventories) {
+            int i = ref.inventory.first(mat);
+            if (i != -1) return ref.inventory.getItem(i);
         }
         return null;
-    }
-
-    public int countMaterial(Material mat) {
-        Iterator<Inventory> iter = this.getStructureInventory();
-        int count = 0;
-        while (iter.hasNext()) {
-            Inventory inventory = iter.next();
-            for (ItemStack content : inventory.getContents())
-                if (content.getType() == mat)
-                    count += content.getAmount();
-        }
-        return count;
-    }
-
-    /**
-     * Attempts to deposit an ItemStack into any attached inventory
-     *
-     * @param stack the stack to deposit
-     * @return any leftover portion of the stack which didn't fit anywhere, null if completely inserted.
-     */
-    public ItemStack deposit(ItemStack stack) {
-        Iterator<Inventory> iter = this.getStructureInventory();
-        while (iter.hasNext()) {
-            stack = iter.next().addItem(stack).values().stream().findFirst().orElse(null);
-            if (stack == null) break;
-        }
-        return stack;
     }
 
     public boolean contains(Location location) {

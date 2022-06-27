@@ -6,6 +6,7 @@ import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.StructureContext;
 
+import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -41,23 +42,30 @@ public class Craft implements WebsocketActionHandler {
     }
 
     private static class CraftingHelper {
-        final ItemStack item;
-        final Location location;
-        final int index;
+        public final VirtualInventory.Slot slot;
         /** The number of items that have been consumed from this helper */
         int timesUsed = 0;
         /** The number of times this helper was included in the client's provided recipe */
         int timesReferenced = 0;
 
-        CraftingHelper(ItemStack item, Location location, int index) {
-            this.item = item;
-            this.location = location;
-            this.index = index;
+        public CraftingHelper(VirtualInventory.Slot slot) {
+            this.slot = slot;
+        }
+
+        public ItemStack getItem() {
+            return this.slot.get();
         }
 
         @Override
         public String toString() {
-            return String.format("%s from %s slot %d (%d/%d)", item, location, index, timesUsed, timesReferenced);
+            return String.format(
+                "%s from %s slot %d (%d/%d)",
+                this.slot.get(),
+                this.slot.getInventory().getLocation(),
+                this.slot.getIndex(),
+                timesUsed,
+                timesReferenced
+            );
         }
     }
 
@@ -77,15 +85,13 @@ public class Craft implements WebsocketActionHandler {
             }
 
             JSONObject reference = ingredients.getJSONObject(i);
-            Block block = ApiUtil.getBlock(ctx.structureContext, reference);
-            int index = reference.getInt("index");
-            ItemStack item = ApiUtil.getItem(block, String.format("ingredient %d block", i), index);
-            Location location = block.getLocation();
-            ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, location);
+            VirtualInventory inventory = ApiUtil.getInventory(ctx.structureContext, reference, s -> s, false);
+            VirtualInventory.Slot slot = inventory.getSlot(reference.getInt("index"));
+            slot.checkProtectionPlugins(ctx);
             CraftingHelper new_or_existing = items.stream()
-                    .filter(helper -> helper != null && helper.location.equals(location) && helper.index == index)
-                    .findFirst()
-                    .orElseGet(() -> new CraftingHelper(item, location, index));
+                .filter(helper -> helper != null && helper.slot.equals(slot))
+                .findFirst()
+                .orElseGet(() -> new CraftingHelper(slot));
             new_or_existing.timesReferenced += 1;
             items.add(new_or_existing);
         }
@@ -121,7 +127,7 @@ public class Craft implements WebsocketActionHandler {
                     // No item to check here and no item provided, move on to next slot
                     if (stack == null) continue;
                     // Incorrect item provided for slot
-                    if (ingredient == null || stack.getType() != ingredient.item.getType()) return false;
+                    if (ingredient == null || stack.getType() != ingredient.getItem().getType()) return false;
 
                     ingredient.timesUsed += 1;
                 }
@@ -131,8 +137,8 @@ public class Craft implements WebsocketActionHandler {
             for (ItemStack required_item: recipe_ingredients) {
                 boolean matched = items.stream().anyMatch(helper -> {
                     if (helper == null) return false;
-                    if (helper.item.getType() != required_item.getType()) return false;
-                    if (helper.timesUsed >= helper.item.getAmount()) return false;
+                    if (helper.getItem().getType() != required_item.getType()) return false;
+                    if (helper.timesUsed >= helper.getItem().getAmount()) return false;
                     helper.timesUsed++;
                     return true;
                 });
@@ -153,10 +159,10 @@ public class Craft implements WebsocketActionHandler {
         ReplCraft.plugin.logger.info("Checking item underflow");
         for (CraftingHelper ingredient: items) {
             if (ingredient == null) continue;
-            if (ingredient.timesUsed > ingredient.item.getAmount()) {
+            if (ingredient.timesUsed > ingredient.getItem().getAmount()) {
                 throw new ApiError(ApiError.INVALID_OPERATION, String.format(
                     "attempted to use more %s than available",
-                    ingredient.item.getType()
+                    ingredient.getItem().getType()
                 ));
             }
         }
@@ -174,11 +180,12 @@ public class Craft implements WebsocketActionHandler {
         ReplCraft.plugin.logger.info("Crafting " + items + "->" + recipe.getResult());
         for (CraftingHelper ingredient: items) {
             if (ingredient == null) continue;
-            ingredient.item.setAmount(ingredient.item.getAmount() - ingredient.timesUsed);
-            ingredient.timesUsed = 0; // Prevent anyone else from using it more
+            ingredient.getItem().setAmount(ingredient.getItem().getAmount() - ingredient.timesUsed);
+            ingredient.timesUsed = 0; // Prevent anyone else from using it to reduce stack amounts more
             if (ReplCraft.plugin.core_protect) {
-                String player = structureContext.getStructure().getPlayer().getName();
-                ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", ingredient.location);
+                String name = structureContext.getStructure().getPlayer().getName() + " [API]";
+                Location location = ingredient.slot.getInventory().getLocation();
+                ReplCraft.plugin.coreProtect.logContainerTransaction(name, location);
             }
         }
 

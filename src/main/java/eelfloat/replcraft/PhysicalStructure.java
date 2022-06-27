@@ -1,12 +1,17 @@
 package eelfloat.replcraft;
 
+import eelfloat.replcraft.util.InventoryReference;
+import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.block.Container;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 public class PhysicalStructure extends Structure {
     public Block sign;
@@ -48,12 +53,12 @@ public class PhysicalStructure extends Structure {
     }
 
     @Override
-    public Iterator<Inventory> getStructureInventory() {
-        return this.chests.stream().map(chest -> {
+    public VirtualInventory getStructureInventory() {
+        return new VirtualInventory(this.chests.stream().map(chest -> {
             BlockState state = chest.getState();
             if (!(state instanceof Chest)) return null;
-            return ((Chest) state).getInventory();
-        }).filter(Objects::nonNull).iterator();
+            return new InventoryReference((Container) state);
+        }).filter(Objects::nonNull));
     }
 
     @Override

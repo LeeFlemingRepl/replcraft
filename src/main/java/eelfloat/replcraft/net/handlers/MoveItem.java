@@ -4,11 +4,11 @@ import eelfloat.replcraft.ReplCraft;
 import eelfloat.replcraft.net.RequestContext;
 import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
-import org.bukkit.block.Block;
-import org.bukkit.inventory.Inventory;
+import eelfloat.replcraft.util.VirtualInventory;
+import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
+import java.util.*;
 
 
 public class MoveItem implements WebsocketActionHandler {
@@ -34,41 +34,52 @@ public class MoveItem implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        Block source = ApiUtil.getBlock(ctx.structureContext, ctx.request, "source_x", "source_y", "source_z");
-        Block target = ApiUtil.getBlock(ctx.structureContext, ctx.request, "target_x", "target_y", "target_z");
-        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, source.getLocation());
-        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, target.getLocation());
+        VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, false);
+        VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, false);
         int index = ctx.request.getInt("index");
         int amount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
         int targetIndex = ctx.request.isNull("target_index") ? -1 : ctx.request.getInt("target_index");
+        source.checkProtectionPlugins(ctx);
+        target.checkProtectionPlugins(ctx);
 
-        Inventory source_inventory = ApiUtil.getContainer(source, "source block");
-        Inventory target_inventory = ApiUtil.getContainer(target, "target block");
-        ItemStack item = ApiUtil.getItem(source, "source block", index);
+        VirtualInventory.Slot sourceItemSlot = source.getSlot(index);
+        ItemStack item = sourceItemSlot.get();
 
-        if (amount == 0) amount = item.getAmount();
+        Optional<VirtualInventory.Slot> targetItemSlot = targetIndex != -1
+                ? Optional.ofNullable(source.getSlot(targetIndex))
+                : Optional.empty();
+
+        if (amount == 0) {
+            amount = item.getAmount();
+        }
         if (amount > item.getAmount()) {
             throw new ApiError(ApiError.INVALID_OPERATION, "tried to move more items than there are");
         }
+
         ItemStack moved = item.clone();
         moved.setAmount(amount);
         if (ReplCraft.plugin.core_protect) {
-            String player = ctx.structureContext.getStructure().getPlayer().getName();
-            ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", source.getLocation());
-            ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", target.getLocation());
+            String name = ctx.structureContext.getStructure().getPlayer().getName() + " [API]";
+            sourceItemSlot.getInventory().container.ifPresent(container -> {
+                ReplCraft.plugin.coreProtect.logContainerTransaction(name, container.getLocation());
+            });
+            targetItemSlot.flatMap(slot -> slot.getInventory().container).ifPresent(container -> {
+                ReplCraft.plugin.coreProtect.logContainerTransaction(name, container.getLocation());
+            });
         }
 
         ArrayList<ItemStack> leftover = new ArrayList<>();
-        ReplCraft.plugin.logger.info(String.format("index %s targetIndex %s amount %s", index, targetIndex, amount));
-        if (targetIndex == -1) {
-            leftover.addAll(target_inventory.addItem(moved).values());
-            ReplCraft.plugin.logger.info("moving all");
+        int finalAmount = amount;
+
+        if (!targetItemSlot.isPresent()) {
+            leftover.addAll(Arrays.asList(target.deposit(moved)));
             item.setAmount(item.getAmount() - amount);
         } else {
-            ItemStack existingItem = target_inventory.getItem(targetIndex);
+            VirtualInventory.Slot slot = targetItemSlot.get();
+            ItemStack existingItem = slot.get();
             if (existingItem == null) {
-                target_inventory.setItem(targetIndex, moved);
-                item.setAmount(item.getAmount() - amount);
+                slot.set(moved);
+                item.setAmount(item.getAmount() - finalAmount);
                 ReplCraft.plugin.logger.info("no existing item");
             } else {
                 if (!existingItem.isSimilar(moved)) {
@@ -82,14 +93,17 @@ public class MoveItem implements WebsocketActionHandler {
                 int unmergableAmount = Math.max(mergedAmount - mergedAmountCapped, 0);
                 existingItem.setAmount(Math.min(mergedAmount, existingItem.getMaxStackSize()));
                 moved.setAmount(unmergableAmount);
-                item.setAmount(item.getAmount() - amount);
-                ReplCraft.plugin.logger.info(String.format("ma %s mac %s uma %s", mergedAmount, mergedAmountCapped, unmergableAmount));
+                item.setAmount(item.getAmount() - finalAmount);
                 if (unmergableAmount > 0) leftover.add(moved);
             }
         }
+
         if (!leftover.isEmpty()) {
             for (ItemStack value: leftover) {
-                source_inventory.addItem(value);
+                ItemStack[] failed = source.deposit(value);
+                Location location = sourceItemSlot.getInventory().getLocation();
+                for (ItemStack item1 : failed)
+                    location.getWorld().dropItemNaturally(location, item1);
             }
             throw new ApiError(ApiError.INVALID_OPERATION, "failed to move all items");
         }
