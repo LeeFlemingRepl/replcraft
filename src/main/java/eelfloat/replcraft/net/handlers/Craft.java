@@ -6,6 +6,7 @@ import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.exceptions.ApiError;
 import eelfloat.replcraft.net.StructureContext;
 
+import eelfloat.replcraft.util.InventoryReference;
 import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -72,8 +73,8 @@ public class Craft implements WebsocketActionHandler {
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         JSONArray ingredients = ctx.request.getJSONArray("ingredients");
-        Inventory output = ApiUtil.getContainer(ApiUtil.getBlock(ctx.structureContext, ctx.request), "output container");
-        ApiUtil.checkProtectionPlugins(ctx.structureContext.getStructure().minecraft_uuid, output.getLocation());
+        VirtualInventory output = ApiUtil.getInventory(ctx, s -> s, false);
+        output.checkProtectionPlugins(ctx);
 
         // A list of crafting helpers. Crafting helpers pointing at the same location are duplicated
         // in the list. Some slots are null to account for spaces.
@@ -101,7 +102,8 @@ public class Craft implements WebsocketActionHandler {
         while (iter.hasNext()) {
             Recipe next = iter.next();
             // Try the recipe
-            if (tryRecipe(ctx.structureContext, next, items, output)) return null;
+            if (tryRecipe(ctx.structureContext, next, items, output))
+                return null;
             // Reset items since this recipe failed
             for (CraftingHelper item: items)
                 if (item != null) item.timesUsed = 0;
@@ -110,7 +112,12 @@ public class Craft implements WebsocketActionHandler {
         throw new ApiError(ApiError.INVALID_OPERATION, "no matching recipe");
     }
 
-    private boolean tryRecipe(StructureContext structureContext, Recipe recipe, ArrayList<CraftingHelper> items, Inventory output) throws ApiError {
+    private boolean tryRecipe(
+        StructureContext structureContext,
+        Recipe recipe,
+        ArrayList<CraftingHelper> items,
+        VirtualInventory output
+    ) throws ApiError {
         if (recipe instanceof ShapedRecipe) {
             Map<Character, ItemStack> ingredientMap = ((ShapedRecipe) recipe).getIngredientMap();
             String[] rows = ((ShapedRecipe) recipe).getShape();
@@ -169,12 +176,16 @@ public class Craft implements WebsocketActionHandler {
 
         // Ensure there's somewhere to put the resulting item
         ReplCraft.plugin.logger.info("Checking space");
-        if (!output.addItem(recipe.getResult()).isEmpty()) {
+        if (output.deposit(recipe.getResult()).length > 0) {
             throw new ApiError(ApiError.INVALID_OPERATION, "no space to store result");
         }
         if (ReplCraft.plugin.core_protect) {
-            String player = structureContext.getStructure().getPlayer().getName();
-            ReplCraft.plugin.coreProtect.logContainerTransaction(player + " [API]", output.getLocation());
+            String name = structureContext.getStructure().getPlayer().getName() + " [API]";
+            for (InventoryReference inventory: output.inventories) {
+                inventory.container.ifPresent(container -> {
+                    ReplCraft.plugin.coreProtect.logContainerTransaction(name, container.getLocation());
+                });
+            }
         }
 
         ReplCraft.plugin.logger.info("Crafting " + items + "->" + recipe.getResult());
