@@ -165,7 +165,7 @@ public class StructureUtil {
         PhysicalStructure structure = new PhysicalStructure(
             material,
             null, null, null, null,
-            null, seen, chests,
+            starting_block.getWorld(), null, seen, chests,
             min_x, min_y, min_z, max_x, max_y, max_z
         );
 

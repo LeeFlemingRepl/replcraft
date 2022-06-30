@@ -3,6 +3,7 @@ package eelfloat.replcraft.listeners;
 import eelfloat.replcraft.*;
 import eelfloat.replcraft.net.ClientV2;
 import eelfloat.replcraft.net.StructureContext;
+import eelfloat.replcraft.util.ApiUtil;
 import eelfloat.replcraft.util.ReplizedTool;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
@@ -24,23 +25,16 @@ import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ToolListeners implements Listener {
-    private void trigger(Player player, ItemStack stack, int x, int y, int z, String reason) {
-        ItemMeta itemMeta = stack.getItemMeta();
-        if (itemMeta == null) return;
-
-        List<String> lore = itemMeta.getLore();
-        if (lore == null) return;
-
-        ReplCraft.plugin.logger.info(String.format(
-            "trigger %s %s %s %s %s %s %s %s",
-            player.getName(), stack, x, y, z, 5, reason, lore
-        ));
-
-        lore.stream()
+    private int trigger(Player player, ReplizedTool tool, int x, int y, int z, String reason) {
+        AtomicInteger triggers = new AtomicInteger();
+        tool.lore.stream()
             .filter(str -> str.startsWith("Replized: "))
             .flatMap(str -> {
                 return ReplCraft.plugin.websocketServer.clients.values().stream()
@@ -54,14 +48,14 @@ public class ToolListeners implements Listener {
             .forEach(itemCtx -> {
                 Optional<StructureMaterial> material = ReplCraft.plugin.frame_materials.stream()
                     .filter(mats -> (
-                        mats.validMaterials.stream().anyMatch(mat -> stack.getType() == mat) &&
+                        mats.validMaterials.stream().anyMatch(mat -> tool.item.getType() == mat) &&
                         mats.type == StructureType.Item
                     ))
                     .findFirst();
                 if (!material.isPresent()) return;
                 Structure structure = new ItemVirtualStructure(
                     player,
-                    stack,
+                    tool.item,
                     material.get(),
                     null,
                     null,
@@ -72,13 +66,17 @@ public class ToolListeners implements Listener {
                     y,
                     z
                 );
-                ReplCraft.plugin.logger.info("Creating context");
+                ReplCraft.plugin.logger.info(String.format(
+                    "Creating tool context %s %s %s %s %s %s %s %s",
+                    player.getName(), tool.item, x, y, z, 5, reason, tool.lore
+                ));
                 StructureContext context = itemCtx.client.createContext(structure, null, reason);
                 Bukkit.getScheduler().runTaskLater(ReplCraft.plugin, () -> {
-                    ReplCraft.plugin.logger.info("Disposing context");
                     itemCtx.client.disposeContext(context.id, "hit hard timeout threshold");
                 }, 10 * 60 * 20);
+                triggers.getAndIncrement();
             });
+        return triggers.get();
     }
 
     @EventHandler
@@ -139,7 +137,9 @@ public class ToolListeners implements Listener {
         Player player = (Player) evt.getDamager();
         ItemStack stack = player.getInventory().getItemInMainHand();
         Location location = evt.getEntity().getLocation();
-        trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemAttack");
+        ReplizedTool tool = ReplizedTool.parse(stack);
+        if (tool == null) return;
+        trigger(player, tool, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemAttack");
     }
 
     @EventHandler
@@ -147,20 +147,36 @@ public class ToolListeners implements Listener {
         Player player = evt.getPlayer();
         ItemStack stack = player.getInventory().getItemInMainHand();
         Block block = evt.getBlock();
-        trigger(player, stack, block.getX(), block.getY(), block.getZ(), "itemBreakBlock");
+        ReplizedTool tool = ReplizedTool.parse(stack);
+        if (tool == null) return;
+        int triggers = trigger(player, tool, block.getX(), block.getY(), block.getZ(), "itemBreakBlock");
+        if (triggers > 0) evt.setCancelled(true);
     }
 
+
+    HashMap<UUID, Long> lastTrigger = new HashMap<>();
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent evt) {
         Player player = evt.getPlayer();
         ItemStack stack = player.getInventory().getItemInMainHand();
+        ReplizedTool tool = ReplizedTool.parse(stack);
+        if (tool == null) return;
+        evt.setCancelled(true);
+
+        long now = System.currentTimeMillis();
+        long last = lastTrigger.computeIfAbsent(player.getUniqueId(), key -> 0L);
+        if (now < last + 200) return;
+        lastTrigger.put(player.getUniqueId(), now);
+
         if (evt.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Block block = evt.getClickedBlock();
-            trigger(player, stack, block.getX(), block.getY(), block.getZ(), "itemInteractBlock");
+            int triggers = trigger(player, tool, block.getX(), block.getY(), block.getZ(), "itemInteractBlock");
+            if (triggers > 0) evt.setCancelled(true);
         }
         if (evt.getAction() == Action.RIGHT_CLICK_AIR) {
             Location location = player.getLocation();
-            trigger(player, stack, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemInteractAir");
+            int triggers = trigger(player, tool, location.getBlockX(), location.getBlockY(), location.getBlockZ(), "itemInteractAir");
+            if (triggers > 0) evt.setCancelled(true);
         }
     }
 }

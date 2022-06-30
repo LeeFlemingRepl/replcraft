@@ -163,6 +163,10 @@ public class ApiUtil {
         return getInventory(ctx.structureContext, ctx.request, keyRemapper, fallbackToStructureInventory);
     }
 
+    public static boolean hasNonNull(JSONObject object, String key) {
+        return object.has(key) && !object.isNull(key);
+    }
+
     /**
      * Retrieves a virtual inventory for the reference given in the request.
      * The reference takes the form of `{ x: number, y: number, z: number }` or `{ structure: true }`.
@@ -180,9 +184,9 @@ public class ApiUtil {
         Function<String, String> keyRemapper,
         boolean fallbackToStructureInventory
     ) throws ApiError {
-        if (request.has(keyRemapper.apply("structure")) && request.getBoolean(keyRemapper.apply("structure"))) {
+        if (hasNonNull(request, keyRemapper.apply("structure")) && request.getBoolean(keyRemapper.apply("structure"))) {
             return structureContext.getStructure().getStructureInventory();
-        } else if (request.has(keyRemapper.apply("x"))) {
+        } else if (hasNonNull(request, keyRemapper.apply("x"))) {
             BlockState state = getBlock(
                 structureContext,
                 request,

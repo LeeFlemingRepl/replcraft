@@ -3,6 +3,7 @@ package eelfloat.replcraft;
 import eelfloat.replcraft.util.InventoryReference;
 import eelfloat.replcraft.util.VirtualInventory;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
@@ -37,15 +38,15 @@ public class PhysicalStructure extends Structure {
      * @param max_z the upper z coordinate of this structure's AABB
      */
     public PhysicalStructure(
-        StructureMaterial material,
-        String replit_username, String replit_repl_id, String minecraft_username, UUID minecraft_uuid,
-        Block sign, HashSet<Location> frameBlocks, List<Block> chests,
-        int min_x, int min_y, int min_z, int max_x, int max_y, int max_z
+            StructureMaterial material,
+            String replit_username, String replit_repl_id, String minecraft_username, UUID minecraft_uuid,
+            World world, Block sign, HashSet<Location> frameBlocks, List<Block> chests,
+            int min_x, int min_y, int min_z, int max_x, int max_y, int max_z
     ) {
         super(
             material,
             replit_username, replit_repl_id, minecraft_username, minecraft_uuid,
-            sign.getWorld(), min_x, min_y, min_z, max_x, max_y, max_z
+            world, min_x, min_y, min_z, max_x, max_y, max_z
         );
         this.sign = sign;
         this.frameBlocks = frameBlocks;

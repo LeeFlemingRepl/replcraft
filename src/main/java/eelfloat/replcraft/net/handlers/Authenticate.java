@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,7 +46,10 @@ public class Authenticate implements WebsocketActionHandler {
         AtomicBoolean otherSuccess = new AtomicBoolean(false);
 
         String token = ctx.request.getString("token");
+        Claims claims = StructureUtil.parseToken(token);
         if (ctx.client instanceof ClientV1) {
+            if (Objects.equals(claims.get("scope", String.class), "item"))
+                throw new ApiError(ApiError.AUTHENTICATION_FAILED, "Invalid token");
             ReplCraft.plugin.logger.info("Performing async V1 authentication...");
             StructureUtil.verifyTokenAsync(token, structure -> {
                 ClientV1 client = (ClientV1) ctx.client;
@@ -61,7 +65,6 @@ public class Authenticate implements WebsocketActionHandler {
             });
         } else if (ctx.client instanceof ClientV2) {
             ClientV2 client = (ClientV2) ctx.client;
-            Claims claims = StructureUtil.parseToken(token);
             String scope = claims.get("scope", String.class);
             ReplCraft.plugin.logger.info("Performing async V2 authentication for scope " + scope + "...");
             switch (scope) {

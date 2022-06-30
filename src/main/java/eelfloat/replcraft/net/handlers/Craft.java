@@ -44,17 +44,26 @@ public class Craft implements WebsocketActionHandler {
 
     private static class CraftingHelper {
         public final VirtualInventory.Slot slot;
+        private final int index;
         /** The number of items that have been consumed from this helper */
         int timesUsed = 0;
         /** The number of times this helper was included in the client's provided recipe */
         int timesReferenced = 0;
 
-        public CraftingHelper(VirtualInventory.Slot slot) {
+        public CraftingHelper(VirtualInventory.Slot slot, int index) {
             this.slot = slot;
+            this.index = index;
         }
 
-        public ItemStack getItem() {
-            return this.slot.get();
+        public ItemStack getItem() throws ApiError {
+            ItemStack stack = this.slot.get();
+            if (stack == null) {
+                throw new ApiError(
+                    ApiError.INVALID_OPERATION,
+                    "No item in specified slot for recipe ingredient " + index
+                );
+            }
+            return stack;
         }
 
         @Override
@@ -89,10 +98,11 @@ public class Craft implements WebsocketActionHandler {
             VirtualInventory inventory = ApiUtil.getInventory(ctx.structureContext, reference, s -> s, false);
             VirtualInventory.Slot slot = inventory.getSlot(reference.getInt("index"));
             slot.checkProtectionPlugins(ctx);
+            int finalI = i;
             CraftingHelper new_or_existing = items.stream()
                 .filter(helper -> helper != null && helper.slot.equals(slot))
                 .findFirst()
-                .orElseGet(() -> new CraftingHelper(slot));
+                .orElseGet(() -> new CraftingHelper(slot, finalI));
             new_or_existing.timesReferenced += 1;
             items.add(new_or_existing);
         }
@@ -142,13 +152,15 @@ public class Craft implements WebsocketActionHandler {
         } else if (recipe instanceof ShapelessRecipe) {
             List<ItemStack> recipe_ingredients = ((ShapelessRecipe) recipe).getIngredientList();
             for (ItemStack required_item: recipe_ingredients) {
-                boolean matched = items.stream().anyMatch(helper -> {
-                    if (helper == null) return false;
-                    if (helper.getItem().getType() != required_item.getType()) return false;
-                    if (helper.timesUsed >= helper.getItem().getAmount()) return false;
+                boolean matched = false;
+                for (CraftingHelper helper: items) {
+                    if (helper == null) continue;
+                    if (helper.getItem().getType() != required_item.getType()) continue;
+                    if (helper.timesUsed >= helper.getItem().getAmount()) continue;
                     helper.timesUsed++;
-                    return true;
-                });
+                    matched = true;
+                    break;
+                }
                 if (!matched) return false;
             }
         } else {
