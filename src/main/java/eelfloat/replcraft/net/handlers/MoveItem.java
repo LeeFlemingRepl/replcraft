@@ -46,7 +46,7 @@ public class MoveItem implements WebsocketActionHandler {
         ItemStack item = sourceItemSlot.get();
 
         Optional<VirtualInventory.Slot> targetItemSlot = targetIndex != -1
-                ? Optional.ofNullable(source.getSlot(targetIndex))
+                ? Optional.ofNullable(target.getSlot(targetIndex))
                 : Optional.empty();
 
         if (amount == 0) {

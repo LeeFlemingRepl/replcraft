@@ -160,7 +160,7 @@ public final class ReplCraft extends JavaPlugin {
                     if (material == null) {
                         throw new RuntimeException(String.format("fuel.strategies.%s.item: invalid material", key));
                     }
-                    double fuel = strat.getDouble("fuel.item_strategy.fuel_provided");
+                    double fuel = strat.getDouble("fuel_provided");
                     stratProvider = ctx -> new ItemFuelStrategy(key, ctx, material, fuel);
                     break;
 
@@ -182,10 +182,12 @@ public final class ReplCraft extends JavaPlugin {
         }
         ReplCraft.plugin.logger.info("Loaded strategies: " + strategies.keySet().toString());
 
+        ReplCraft.plugin.logger.info("Materials: " + config.getMapList("materials"));
         for (Map<?, ?> structureType: config.getMapList("materials")) {
             String name = (String) structureType.get("name");
+            ReplCraft.plugin.logger.info("Loading structure material " + name);
 
-            String typeName = (String) structureType.get("type");
+            String typeName = (String) structureType.get("structureType");
             typeName = typeName.substring(0, 1).toUpperCase() + typeName.substring(1).toLowerCase();
             StructureType type = StructureType.valueOf(typeName);
 

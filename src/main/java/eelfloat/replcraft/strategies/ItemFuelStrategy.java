@@ -33,7 +33,7 @@ public class ItemFuelStrategy extends FuelStrategy {
         long count = this.structureContext.getStructure()
             .getStructureInventory()
             .stream()
-            .filter(el -> el.getType() == this.material)
+            .filter(el -> el != null && el.getType() == this.material)
             .count();
         return count * fuel_per_item;
     }

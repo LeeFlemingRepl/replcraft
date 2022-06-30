@@ -66,7 +66,7 @@ public class SetBlock implements WebsocketActionHandler {
 
             if (material != Material.AIR && !ReplCraft.plugin.creative_mode) {
                 Optional<ItemStack> stack = source.stream()
-                    .filter(item -> item.getType() == material && item.getAmount() >= 1)
+                    .filter(item -> item != null && item.getType() == material && item.getAmount() >= 1)
                     .findFirst();
                 if (!stack.isPresent()) {
                     String message = "No " + material + " available in any attached chests.";
