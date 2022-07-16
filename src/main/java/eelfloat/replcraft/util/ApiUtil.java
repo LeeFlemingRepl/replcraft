@@ -116,13 +116,13 @@ public class ApiUtil {
                 case "delay": // repeater
                 case "type": // slabs (todo: potential duplication?)
                 case "open": // trapdoors
-                // case "east": // maybe, for fences, walls and redstone
-                // case "north":
-                // case "south":
-                // case "west":
-                // case "up":
-                // case "down":
-                // case "half": // maybe, for doors, beds, stairs, tall grass, etc.
+                case "east": // fences, walls and redstone
+                case "north":
+                case "south":
+                case "west":
+                case "up":
+                case "down":
+                case "half": // doors, beds, stairs, tall grass, etc.
                 // case "color": // maybe
                     continue;
 
@@ -130,6 +130,10 @@ public class ApiUtil {
                     throw new ApiError(ApiError.BAD_REQUEST, String.format("Disallowed block state tag \"%s\"", name));
             }
         }
+    }
+
+    public static void doThing(Block block) {
+        block.getLocation().getWorld();
     }
 
     /**
@@ -148,6 +152,7 @@ public class ApiUtil {
             case COCOA:        return Material.COCOA_BEANS;
             case CARROTS:      return Material.CARROT;
             case POTATOES:     return Material.POTATO;
+            case SWEET_BERRY_BUSH:    return Material.SWEET_BERRIES;
             case REDSTONE_WALL_TORCH: return Material.REDSTONE_TORCH;
             case LAVA: return Material.LAVA_BUCKET;
             case WATER: return Material.WATER_BUCKET;

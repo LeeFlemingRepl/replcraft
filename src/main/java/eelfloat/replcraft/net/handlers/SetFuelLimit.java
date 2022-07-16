@@ -28,7 +28,8 @@ public class SetFuelLimit implements WebsocketActionHandler {
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         String strategy = ctx.request.getString("strategy");
         double limit = ctx.request.getDouble("limit");
-        ctx.structureContext.setMaxFuel(strategy, limit);
+        if (!ctx.structureContext.setMaxFuel(strategy, limit))
+            throw new ApiError(ApiError.BAD_REQUEST, "No such fuel strategy");
         return null;
     }
 }

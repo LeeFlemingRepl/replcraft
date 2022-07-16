@@ -94,8 +94,12 @@ public class StructureContext {
     public double getMaxFuel(String strategyName) {
         return fuelLimits.computeIfAbsent(strategyName, s -> Double.POSITIVE_INFINITY);
     }
-    public void setMaxFuel(String strategyName, double maxFuel) {
+    public boolean setMaxFuel(String strategyName, double maxFuel) {
+        if (this.strategies.stream().noneMatch(strat -> strat.configName.equals(strategyName))) {
+            return false;
+        }
         fuelLimits.put(strategyName, maxFuel);
+        return true;
     }
 
     /**
@@ -271,7 +275,7 @@ public class StructureContext {
         polledBlocks.remove(block.getLocation());
     }
 
-    /** Disposes of the client */
+    /** Disposes of the context */
     public void dispose() {
         if (this.structure != null) {
             for (FuelStrategy strategy: this.strategies) {

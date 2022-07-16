@@ -60,6 +60,7 @@ public class ClientV2 extends Client {
             json.put("cause", cause);
             json.put("id", id);
             this.send(removed, json);
+            removed.dispose();
         }
     }
 
