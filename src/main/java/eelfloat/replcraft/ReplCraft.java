@@ -187,7 +187,12 @@ public final class ReplCraft extends JavaPlugin {
             String name = (String) structureType.get("name");
             ReplCraft.plugin.logger.info("Loading structure material " + name);
 
-            String typeName = (String) structureType.get("structureType");
+            String typeName = structureType.containsKey("structureType")
+                // weird legacy thing where type was accidently renamed to structureType and not caught,
+                // so now there's some configs in the wild that use 'structureType'.
+                // Just allow either for backwards-compat.
+                ? (String) structureType.get("structureType")
+                : (String) structureType.get("type");
             typeName = typeName.substring(0, 1).toUpperCase() + typeName.substring(1).toLowerCase();
             StructureType type = StructureType.valueOf(typeName);
 
