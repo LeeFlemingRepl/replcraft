@@ -123,9 +123,12 @@ public class ApiUtil {
                 case "up":
                 case "down":
                 case "half": // doors, beds, stairs, tall grass, etc.
-                // case "color": // maybe
+                case "note": // note blocks
+                case "instrument": // note blocks
                     continue;
 
+                // case "color": // probably not safe, transmuting wool?
+                // case "powered": // whether something is powered by redstone, not safe to expose directly
                 default:
                     throw new ApiError(ApiError.BAD_REQUEST, String.format("Disallowed block state tag \"%s\"", name));
             }
