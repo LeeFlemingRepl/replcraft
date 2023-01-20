@@ -26,7 +26,8 @@ protection:
   grief_prevention: false
   # Direct CoreProtect integration to log changes made via API
   core_protect: false
-  # Direct WorldGuard integration, offers `replcraft` flag to allow or deny modification via API
+  # Direct WorldGuard integration, offers `replcraft-enabled` flag to allow or deny modification via API,
+  # as well as `replcraft-infinite-fuel` to disable fuel for structures inside the region.
   world_guard: false
   # Default block protection: tests a BlockBreakEvent to see if it's cancelled
   # Very important if you use non-GriefPrevention based land claims, otherwise a structure could be built around the

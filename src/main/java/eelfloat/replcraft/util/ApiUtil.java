@@ -31,8 +31,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ApiUtil {
-    private static final RegionQuery worldguardQuery = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+    private static RegionQuery worldguardQuery = null;
     private static final Pattern blockStates = Pattern.compile("\\[(\\w+)=(\\w+)]");
+
+    /**
+     * If WorldGuard is present, initializes and returns the worldguardQuery (If worldguard _isn't_ present,
+     * referencing it will throw a class loading error, so this helper function explicitly checks for it).
+     * @return the initialized worldguardQuery, or null.
+     */
+    private static RegionQuery getWorldguardQuery() {
+        if (ReplCraft.plugin.world_guard && worldguardQuery == null) {
+            worldguardQuery = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+        }
+        return worldguardQuery;
+    }
 
     /**
      * Validates and returns a container inventory
@@ -76,7 +88,7 @@ public class ApiUtil {
                 throw new ApiError(ApiError.INVALID_OPERATION, "This block is protected by GriefPrevention.");
         }
         if (ReplCraft.plugin.world_guard) {
-            ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(location));
+            ApplicableRegionSet set = getWorldguardQuery().getApplicableRegions(BukkitAdapter.adapt(location));
             if (set.queryState(null, ReplCraft.plugin.worldGuard.replcraft_enabled) != StateFlag.State.ALLOW) {
                 throw new ApiError(ApiError.INVALID_OPERATION, "This block is protected by WorldGuard.");
             }
@@ -90,7 +102,7 @@ public class ApiUtil {
      * @return true if the flag is ALLOW
      */
     public static boolean checkFlagOnStructure(Structure structure, StateFlag flag) {
-        ApplicableRegionSet set = worldguardQuery.getApplicableRegions(BukkitAdapter.adapt(structure.getPrimaryLocation()));
+        ApplicableRegionSet set = getWorldguardQuery().getApplicableRegions(BukkitAdapter.adapt(structure.getPrimaryLocation()));
         return set.queryState(null, flag) == StateFlag.State.ALLOW;
     }
 
