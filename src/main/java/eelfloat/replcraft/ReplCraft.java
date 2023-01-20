@@ -107,9 +107,13 @@ public final class ReplCraft extends JavaPlugin {
         Thread.currentThread().setContextClassLoader(classLoader);
 
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");
-        RegisteredServiceProvider<Economy> rspe = getServer().getServicesManager().getRegistration(Economy.class);
-        if (vault != null && rspe != null)
-            economy = rspe.getProvider();
+        RegisteredServiceProvider<Economy> rspe = null;
+        if (vault != null) {
+            rspe = getServer().getServicesManager().getRegistration(Economy.class);
+            if (rspe != null) {
+                economy = rspe.getProvider();
+            }
+        }
         logger.info(String.format("Vault %s rspe %s economy %s", vault, rspe, economy));
 
         block_protection = config.getBoolean("protection.default_block");
