@@ -37,76 +37,89 @@ public class MoveItem implements WebsocketActionHandler {
         VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, false);
         VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, false);
         int index = ctx.request.getInt("index");
-        int amount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
+        int requestedMoveAmount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
         int targetIndex = ctx.request.isNull("target_index") ? -1 : ctx.request.getInt("target_index");
         source.checkProtectionPlugins(ctx);
         target.checkProtectionPlugins(ctx);
 
         VirtualInventory.Slot sourceItemSlot = source.getSlot(index);
-        ItemStack item = sourceItemSlot.get();
+        ItemStack sourceItem = sourceItemSlot.get();
 
-        Optional<VirtualInventory.Slot> targetItemSlot = targetIndex != -1
+        Optional<VirtualInventory.Slot> targetItemSlotOpt = targetIndex != -1
                 ? Optional.ofNullable(target.getSlot(targetIndex))
                 : Optional.empty();
 
-        if (amount == 0) {
-            amount = item.getAmount();
+        if (sourceItem == null) {
+            throw new ApiError(ApiError.INVALID_OPERATION, "no item in slot");
         }
-        if (amount > item.getAmount()) {
-            throw new ApiError(ApiError.INVALID_OPERATION, "tried to move more items than there are");
+        final int moveAmount = requestedMoveAmount > 0 ? requestedMoveAmount : sourceItem.getAmount();
+        if (moveAmount > sourceItem.getAmount()) {
+            throw new ApiError(ApiError.INVALID_OPERATION, "tried to move more items than are present");
         }
 
-        ItemStack moved = item.clone();
-        moved.setAmount(amount);
         if (ReplCraft.plugin.core_protect) {
             String name = ctx.structureContext.getStructure().getPlayer().getName() + " [API]";
             sourceItemSlot.getInventory().container.ifPresent(container -> {
                 ReplCraft.plugin.coreProtect.logContainerTransaction(name, container.getLocation());
             });
-            targetItemSlot.flatMap(slot -> slot.getInventory().container).ifPresent(container -> {
+            targetItemSlotOpt.flatMap(slot -> slot.getInventory().container).ifPresent(container -> {
                 ReplCraft.plugin.coreProtect.logContainerTransaction(name, container.getLocation());
             });
         }
 
-        ArrayList<ItemStack> leftover = new ArrayList<>();
-        int finalAmount = amount;
+        if (targetItemSlotOpt.isEmpty()) {
+            ItemStack newStack = sourceItem.clone();
+            newStack.setAmount(moveAmount);
+            ItemStack[] leftover = target.deposit(newStack);
 
-        if (!targetItemSlot.isPresent()) {
-            leftover.addAll(Arrays.asList(target.deposit(moved)));
-            item.setAmount(item.getAmount() - amount);
-        } else {
-            VirtualInventory.Slot slot = targetItemSlot.get();
-            ItemStack existingItem = slot.get();
-            if (existingItem == null) {
-                slot.set(moved);
-                item.setAmount(item.getAmount() - finalAmount);
-                ReplCraft.plugin.logger.info("no existing item");
-            } else {
-                if (!existingItem.isSimilar(moved)) {
-                    throw new ApiError(
-                        ApiError.INVALID_OPERATION,
-                        "failed to move item: item exists in target slot and is a different type"
-                    );
-                }
-                int mergedAmount = existingItem.getAmount() + moved.getAmount();
-                int mergedAmountCapped = Math.min(mergedAmount, existingItem.getMaxStackSize());
-                int unmergableAmount = Math.max(mergedAmount - mergedAmountCapped, 0);
-                existingItem.setAmount(Math.min(mergedAmount, existingItem.getMaxStackSize()));
-                moved.setAmount(unmergableAmount);
-                item.setAmount(item.getAmount() - finalAmount);
-                if (unmergableAmount > 0) leftover.add(moved);
+            int unmoved = 0;
+            // this branch should always be entered since we're working with single items,
+            // but might as well add the guards just in case.
+            if (leftover.length == 1 && sourceItem.isSimilar(leftover[0])) {
+                unmoved += leftover[0].getAmount();
+                leftover[0].setAmount(0);
             }
-        }
+            sourceItem.setAmount(sourceItem.getAmount() - moveAmount + unmoved);
 
-        if (!leftover.isEmpty()) {
             for (ItemStack value: leftover) {
                 ItemStack[] failed = source.deposit(value);
                 Location location = sourceItemSlot.getInventory().getLocation();
                 for (ItemStack item1 : failed)
                     location.getWorld().dropItemNaturally(location, item1);
             }
-            throw new ApiError(ApiError.INVALID_OPERATION, "failed to move all items");
+
+            if (leftover.length > 0)
+                throw new ApiError(ApiError.INVALID_OPERATION, "failed to move all items");
+        } else {
+            VirtualInventory.Slot targetItemSlot = targetItemSlotOpt.get();
+            ItemStack existingTargetItem = targetItemSlot.get();
+
+            if (existingTargetItem == null) {
+                ItemStack newStack = sourceItem.clone();
+                newStack.setAmount(moveAmount);
+                targetItemSlot.set(newStack);
+                sourceItem.setAmount(sourceItem.getAmount() - moveAmount);
+            } else {
+                if (!existingTargetItem.isSimilar(sourceItem)) {
+                    throw new ApiError(
+                        ApiError.INVALID_OPERATION,
+                        "failed to move item: item exists in target slot and is a different type"
+                    );
+                }
+
+                int capacityLeft = existingTargetItem.getMaxStackSize() - existingTargetItem.getAmount();
+                if (moveAmount > capacityLeft) {
+                    throw new ApiError(
+                        ApiError.INVALID_OPERATION,
+                        "failed to move item: target slot can't hold the requested amount"
+                    );
+                }
+
+                existingTargetItem.setAmount(existingTargetItem.getAmount() + moveAmount);
+                sourceItem.setAmount(sourceItem.getAmount() - moveAmount);
+            }
         }
+
         return null;
     }
 }
