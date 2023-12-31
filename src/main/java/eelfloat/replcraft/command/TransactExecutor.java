@@ -45,6 +45,10 @@ public class TransactExecutor implements CommandExecutor {
             return true;
         }
 
+        if (args.length == 0) {
+            return false;
+        }
+
         double amount;
         try {
             amount = Double.parseDouble(args[0]);

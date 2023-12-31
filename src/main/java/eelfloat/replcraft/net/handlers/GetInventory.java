@@ -45,7 +45,7 @@ public class GetInventory implements WebsocketActionHandler {
         JSONArray items = new JSONArray();
         AtomicInteger index = new AtomicInteger();
 
-        ApiUtil.getInventory(ctx, s -> s, false)
+        ApiUtil.getInventory(ctx, s -> s, "inventory", false)
             .stream()
             .map(item -> {
                 int i = index.getAndIncrement();

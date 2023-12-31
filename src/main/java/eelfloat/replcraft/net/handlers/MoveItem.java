@@ -34,8 +34,8 @@ public class MoveItem implements WebsocketActionHandler {
 
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
-        VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, false);
-        VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, false);
+        VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, "source", false);
+        VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, "target", false);
         int index = ctx.request.getInt("index");
         int requestedMoveAmount = ctx.request.isNull("amount") ? 0 : ctx.request.getInt("amount");
         int targetIndex = ctx.request.isNull("target_index") ? -1 : ctx.request.getInt("target_index");

@@ -58,8 +58,8 @@ public class SetBlock implements WebsocketActionHandler {
             String blockDataString = ctx.request.getString("blockData");
             ApiUtil.validateBlockData(blockDataString);
 
-            VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, true);
-            VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, true);
+            VirtualInventory source = ApiUtil.getInventory(ctx, s -> "source_" + s, "source", true);
+            VirtualInventory target = ApiUtil.getInventory(ctx, s -> "target_" + s, "target", true);
 
             BlockData blockData = ReplCraft.plugin.getServer().createBlockData(blockDataString);
             Material material = ApiUtil.remapBlockMaterialToItemMaterial(blockData.getMaterial());

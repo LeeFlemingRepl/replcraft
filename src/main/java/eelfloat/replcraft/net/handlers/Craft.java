@@ -82,7 +82,7 @@ public class Craft implements WebsocketActionHandler {
     @Override
     public ActionContinuation execute(RequestContext ctx) throws ApiError {
         JSONArray ingredients = ctx.request.getJSONArray("ingredients");
-        VirtualInventory output = ApiUtil.getInventory(ctx, s -> s, false);
+        VirtualInventory output = ApiUtil.getInventory(ctx, s -> s, "crafting output", false);
         output.checkProtectionPlugins(ctx);
 
         // A list of crafting helpers. Crafting helpers pointing at the same location are duplicated
@@ -95,7 +95,7 @@ public class Craft implements WebsocketActionHandler {
             }
 
             JSONObject reference = ingredients.getJSONObject(i);
-            VirtualInventory inventory = ApiUtil.getInventory(ctx.structureContext, reference, s -> s, false);
+            VirtualInventory inventory = ApiUtil.getInventory(ctx.structureContext, reference, s -> s, "ingredient #" + (i+1), false);
             VirtualInventory.Slot slot = inventory.getSlot(reference.getInt("index"));
             slot.checkProtectionPlugins(ctx);
             int finalI = i;

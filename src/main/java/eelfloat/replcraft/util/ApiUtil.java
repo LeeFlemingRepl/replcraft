@@ -178,9 +178,10 @@ public class ApiUtil {
     public static VirtualInventory getInventory(
         RequestContext ctx,
         Function<String, String> keyRemapper,
+        String referenceName,
         boolean fallbackToStructureInventory
     ) throws ApiError {
-        return getInventory(ctx.structureContext, ctx.request, keyRemapper, fallbackToStructureInventory);
+        return getInventory(ctx.structureContext, ctx.request, keyRemapper, referenceName, fallbackToStructureInventory);
     }
 
     public static boolean hasNonNull(JSONObject object, String key) {
@@ -193,6 +194,7 @@ public class ApiUtil {
      * @param structureContext the structure context making this request
      * @param request the request containing the reference
      * @param keyRemapper renames keys accessed from the request object (e.g. x -> target_x)
+     * @param referenceName A user-friendly name for the 'reason of access', for example 'craft output' or 'craft input #1'
      * @param fallbackToStructureInventory if the structure inventory should be used if neither form of the reference
      *                                     is present.
      * @return a virtual inventory matching the reference
@@ -202,6 +204,7 @@ public class ApiUtil {
         StructureContext structureContext,
         JSONObject request,
         Function<String, String> keyRemapper,
+        String referenceName,
         boolean fallbackToStructureInventory
     ) throws ApiError {
         if (hasNonNull(request, keyRemapper.apply("structure")) && request.getBoolean(keyRemapper.apply("structure"))) {
@@ -222,7 +225,7 @@ public class ApiUtil {
         } else if (fallbackToStructureInventory) {
             return structureContext.getStructure().getStructureInventory();
         } else {
-            throw new ApiError(ApiError.BAD_REQUEST, "no container specified");
+            throw new ApiError(ApiError.BAD_REQUEST, "invalid container specified for " + referenceName);
         }
     }
 
